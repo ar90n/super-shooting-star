@@ -47,15 +47,18 @@
   },
   "dependencies": {
     "@koa/router": "^10.0.0",
+    "5to6-codemod": "^1.8.0",
     "busboy": "^1.6.0",
     "commander": "^8.0.0",
     "fast-xml-parser": "^4.3.2",
     "he": "^1.2.0",
+    "jscodeshift": "^0.15.0",
     "koa": "^2.12.1",
     "koa-logger": "^3.2.0",
     "lodash": "^4.17.20",
     "request-promise-native": "^0.0.0",
     "statuses": "^2.0.0",
+    "ts-migrate": "^0.1.35",
     "winston": "^3.0.0"
   },
   "devDependencies": {
