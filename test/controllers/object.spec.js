@@ -60,7 +60,6 @@ describe('Operations on Objects', () => {
     });
 
     it('deletes 500 objects with deleteObjects', async function () {
-      this.timeout(30000);
       await generateTestObjects(s3Client, 'bucket-a', 500);
       const deleteObj = { Objects: times(500, (i) => ({ Key: 'key' + i })) };
       const data = await s3Client
@@ -69,7 +68,7 @@ describe('Operations on Objects', () => {
       expect(data.Deleted).to.exist;
       expect(data.Deleted).to.have.lengthOf(500);
       expect(find(data.Deleted, { Key: 'key67' })).to.exist;
-    });
+    }, 30000);
 
     it('reports invalid XML when using deleteObjects with zero objects', async function () {
       let error;
@@ -100,7 +99,6 @@ describe('Operations on Objects', () => {
 
   describe('DELETE Object', () => {
     it('deletes 500 objects', async function () {
-      this.timeout(30000);
       await generateTestObjects(s3Client, 'bucket-a', 500);
       await pMap(
         times(500),
@@ -110,7 +108,7 @@ describe('Operations on Objects', () => {
             .promise(),
         { concurrency: 100 },
       );
-    });
+    }, 30000);
 
     it('deletes a nonexistent object from a bucket', async function () {
       await s3Client

@@ -52,7 +52,7 @@ describe('Static Website Tests', function () {
     },
   ];
 
-  this.beforeEach(async () => {
+  beforeEach(async () => {
     ({ s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     }));
