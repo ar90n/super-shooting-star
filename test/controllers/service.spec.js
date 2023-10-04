@@ -1,10 +1,9 @@
 'use strict';
 
-const { expect } = require('chai');
-const { zip } = require('lodash');
-const moment = require('moment');
-
-const { createServerAndClient } = require('../helpers');
+import { expect } from 'chai';
+import { zip } from 'lodash-es';
+import moment from 'moment';
+import { createServerAndClient } from '../helpers';
 
 describe('Operations on the Service', () => {
   describe('GET Service', () => {

@@ -28,7 +28,7 @@
   "homepage": "https://github.com/jamhall/s3rver",
   "scripts": {
     "coverage": "nyc npm test",
-    "test": "mocha",
+    "test": "mocha -r esm --experimental-specifier-resolution=node",
     "fmt": "eslint . --fix && prettier . --write",
     "prepare": "husky install"
   },
@@ -58,7 +58,7 @@
     "koa": "^2.12.1",
     "koa-logger": "^3.2.0",
     "lodash-es": "^4.17.21",
-    "request-promise-native": "^0.0.0",
+    "request-promise-native": "^1.0.9",
     "statuses": "^2.0.0",
     "ts-migrate": "^0.1.35",
     "winston": "^3.0.0"
@@ -67,7 +67,7 @@
     "aws-sdk": "^2.1468.0",
     "chai": "4.3.4",
     "chai-as-promised": "7.1.1",
-    "eslint": "7.32.0",
+    "eslint": "8.52.0",
     "eslint-config-prettier": "8.3.0",
     "eslint-config-standard": "16.0.3",
     "eslint-plugin-import": "2.24.2",

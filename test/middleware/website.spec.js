@@ -1,12 +1,15 @@
 'use strict';
 
-const { expect } = require('chai');
-const fs = require('fs');
+import { createRequire } from 'node:module';
+import { expect } from 'chai';
+import fs from 'fs';
+
+import { createServerAndClient } from '../helpers';
+
+const require = createRequire(import.meta.url);
 const request = require('request-promise-native').defaults({
   resolveWithFullResponse: true,
 });
-
-const { createServerAndClient } = require('../helpers');
 
 describe('Static Website Tests', function () {
   let s3Client;

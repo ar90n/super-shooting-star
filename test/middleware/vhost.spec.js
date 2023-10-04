@@ -1,14 +1,17 @@
 'use strict';
 
-const { expect } = require('chai');
-const { zip } = require('lodash');
-const moment = require('moment');
-const os = require('os');
+import { createRequire } from 'node:module';
+import { expect } from 'chai';
+import { zip } from 'lodash-es';
+import moment from 'moment';
+import os from 'os';
+
+import { createServerAndClient, parseXml } from '../helpers';
+
+const require = createRequire(import.meta.url);
 const request = require('request-promise-native').defaults({
   resolveWithFullResponse: true,
 });
-
-const { createServerAndClient, parseXml } = require('../helpers');
 
 describe('Virtual Host resolution', () => {
   const buckets = [{ name: 'bucket-a' }, { name: 'bucket-b' }];

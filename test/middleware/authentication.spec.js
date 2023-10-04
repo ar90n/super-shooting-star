@@ -1,16 +1,17 @@
 'use strict';
 
-const { expect } = require('chai');
-const express = require('express');
-const fs = require('fs');
+import { createRequire } from 'node:module';
+import { expect } from 'chai';
+import express from 'express';
+import fs from 'fs';
+import { URL } from 'url';
+import { toISO8601String } from '../../lib/utils';
+import { createServerAndClient } from '../helpers';
+
+const require = createRequire(import.meta.url);
 const request = require('request-promise-native').defaults({
   resolveWithFullResponse: true,
 });
-const { URL } = require('url');
-
-const { toISO8601String } = require('../../lib/utils');
-
-const { createServerAndClient } = require('../helpers');
 
 describe('REST Authentication', () => {
   let s3rver;

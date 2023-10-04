@@ -1,14 +1,12 @@
 /* eslint-env mocha */
 'use strict';
 
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
-const os = require('os');
-const path = require('path');
-
-const S3rver = require('..');
-
-const { resetTmpDir, instances } = require('./helpers');
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import os from 'os';
+import path from 'path';
+import S3rver from '..';
+import { resetTmpDir, instances } from './helpers';
 
 chai.use(chaiAsPromised);
 

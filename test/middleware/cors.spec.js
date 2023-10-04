@@ -1,13 +1,16 @@
 'use strict';
 
-const AWS = require('aws-sdk');
-const { expect } = require('chai');
-const fs = require('fs');
+import { createRequire } from 'node:module';
+import AWS from 'aws-sdk';
+import { expect } from 'chai';
+import fs from 'fs';
+
+import S3rver from '../..';
+
+const require = createRequire(import.meta.url);
 const request = require('request-promise-native').defaults({
   resolveWithFullResponse: true,
 });
-
-const S3rver = require('../..');
 
 describe('CORS Policy Tests', function () {
   const buckets = [

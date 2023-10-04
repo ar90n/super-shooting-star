@@ -1,8 +1,7 @@
 'use strict';
 
-const { expect } = require('chai');
-
-const { S3WebsiteConfiguration } = require('../../lib/models/config');
+import { expect } from 'chai';
+import { S3WebsiteConfiguration } from '../../lib/models/config';
 
 describe('S3WebsiteConfiguration', () => {
   const notWellFormedError =

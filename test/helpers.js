@@ -1,22 +1,22 @@
 'use strict';
 
-const AWS = require('aws-sdk');
-const { RequestSigner } = require('aws4');
-const crypto = require('crypto');
-const { XMLParser } = require('fast-xml-parser');
-const fs = require('fs');
-const { times } = require('lodash');
-const os = require('os');
-const path = require('path');
-const pMap = require('p-map');
-
-const S3rver = require('..');
+import AWS from 'aws-sdk';
+import pkg from 'aws4';
+import crypto from 'crypto';
+import { XMLParser } from 'fast-xml-parser';
+import fs from 'fs';
+import { times } from 'lodash-es';
+import os from 'os';
+import path from 'path';
+import pMap from 'p-map';
+import S3rver from '..';
+const { RequestSigner } = pkg;
 
 const tmpDir = path.join(os.tmpdir(), 's3rver_test');
 
-const instances = new Set();
+export const instances = new Set();
 
-exports.resetTmpDir = function resetTmpDir() {
+export const resetTmpDir = function resetTmpDir() {
   try {
     fs.rmSync(tmpDir, { recursive: true });
   } catch (err) {
@@ -31,7 +31,7 @@ exports.resetTmpDir = function resetTmpDir() {
   }
 };
 
-exports.generateTestObjects = function generateTestObjects(
+export const generateTestObjects = function generateTestObjects(
   s3Client,
   bucket,
   amount,
@@ -48,15 +48,18 @@ exports.generateTestObjects = function generateTestObjects(
   });
 };
 
-exports.md5 = (data) => crypto.createHash('md5').update(data).digest('hex');
+export const md5 = (data) =>
+  crypto.createHash('md5').update(data).digest('hex');
 
-exports.parseXml = (data) => {
+export const parseXml = (data) => {
   const xmlParser = new XMLParser();
 
   return xmlParser.parse(data);
 };
 
-exports.createServerAndClient = async function createServerAndClient(options) {
+export const createServerAndClient = async function createServerAndClient(
+  options,
+) {
   const s3rver = new S3rver(options);
   const { port } = await s3rver.run();
   instances.add(s3rver);
@@ -73,9 +76,7 @@ exports.createServerAndClient = async function createServerAndClient(options) {
   return { s3rver, s3Client };
 };
 
-exports.instances = instances;
-
-exports.StreamingRequestSigner = class extends RequestSigner {
+export const StreamingRequestSigner = class extends RequestSigner {
   prepareRequest() {
     this.request.headers['X-Amz-Content-Sha256'] =
       'STREAMING-AWS4-HMAC-SHA256-PAYLOAD';

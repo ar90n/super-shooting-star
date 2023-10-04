@@ -1,19 +1,21 @@
 'use strict';
 
-const AWS = require('aws-sdk');
-const { expect } = require('chai');
-const { once } = require('events');
-const express = require('express');
-const FormData = require('form-data');
-const fs = require('fs');
-const crypto = require('crypto');
+import { createRequire } from 'node:module';
+import AWS from 'aws-sdk';
+import { expect } from 'chai';
+import { once } from 'events';
+import express from 'express';
+import FormData from 'form-data';
+import fs from 'fs';
+import crypto from 'crypto';
+
+import { createServerAndClient, generateTestObjects } from './helpers';
+import S3rver from '../lib/s3rver';
+
+const require = createRequire(import.meta.url);
 const request = require('request-promise-native').defaults({
   resolveWithFullResponse: true,
 });
-
-const { createServerAndClient, generateTestObjects } = require('./helpers');
-
-const S3rver = require('../lib/s3rver');
 
 describe('S3rver', () => {
   describe('#run', () => {

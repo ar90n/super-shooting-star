@@ -1,10 +1,12 @@
 'use strict';
 
-const { expect } = require('chai');
-const fs = require('fs');
-const { find } = require('lodash');
+import { createRequire } from 'node:module';
+import { expect } from 'chai';
+import fs from 'fs';
+import { find } from 'lodash-es';
+import { createServerAndClient, generateTestObjects } from '../helpers';
 
-const { createServerAndClient, generateTestObjects } = require('../helpers');
+const require = createRequire(import.meta.url);
 
 describe('Operations on Buckets', () => {
   let s3Client;

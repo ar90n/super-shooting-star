@@ -1,26 +1,30 @@
 'use strict';
 
-const { expect } = require('chai');
-const { once } = require('events');
-const express = require('express');
-const FormData = require('form-data');
-const fs = require('fs');
-const http = require('http');
-const { find, times } = require('lodash');
-const moment = require('moment');
-const pMap = require('p-map');
-const request = require('request-promise-native').defaults({
-  resolveWithFullResponse: true,
-});
-const { URL, URLSearchParams } = require('url');
+import { createRequire } from 'node:module';
+import { expect } from 'chai';
+import { once } from 'events';
+import express from 'express';
+import FormData from 'form-data';
+import fs from 'fs';
+import http from 'http';
+import { find, times } from 'lodash-es';
+import moment from 'moment';
+import pMap from 'p-map';
+import { URL, URLSearchParams } from 'url';
 
-const {
+import {
   createServerAndClient,
   generateTestObjects,
   md5,
   parseXml,
   StreamingRequestSigner,
-} = require('../helpers');
+} from '../helpers';
+
+const require = createRequire(import.meta.url);
+
+const request = require('request-promise-native').defaults({
+  resolveWithFullResponse: true,
+});
 
 describe('Operations on Objects', () => {
   let s3rver;

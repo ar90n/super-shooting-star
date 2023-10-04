@@ -1,8 +1,7 @@
 'use strict';
 
-const { expect } = require('chai');
-
-const RoutingRule = require('../../lib/models/routing-rule');
+import { expect } from 'chai';
+import RoutingRule from '../../lib/models/routing-rule';
 
 describe('RoutingRule', () => {
   describe('Condition', () => {
