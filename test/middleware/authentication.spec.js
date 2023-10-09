@@ -93,7 +93,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>InvalidArgument</Code>');
   });
 
-  it('rejects a request with an invalid authorization header [v2]', async function () {
+  it('rejects a request with signature version 2', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {
@@ -128,24 +128,6 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>AuthorizationHeaderMalformed</Code>');
   });
 
-  it('rejects a request with invalid query params [v2]', async function () {
-    let res;
-    try {
-      res = await request('bucket-a/mykey', {
-        baseUrl: s3Client.endpoint.href,
-        qs: {
-          AWSAccessKeyId: 'S3RVER',
-          Signature: 'dummysig',
-          // expiration is omitted
-        },
-      });
-    } catch (err) {
-      res = err.response;
-    }
-    expect(res.statusCode).to.equal(403);
-    expect(res.body).to.contain('<Code>AccessDenied</Code>');
-  });
-
   it('rejects a request with invalid query params [v4]', async function () {
     let res;
     try {
@@ -166,49 +148,15 @@ describe('REST Authentication', () => {
     );
   });
 
-  it('rejects a request with an incorrect signature in header [v2]', async function () {
-    let res;
-    try {
-      res = await request('bucket-a/mykey', {
-        baseUrl: s3Client.endpoint.href,
-        headers: {
-          Authorization: 'AWS S3RVER:badsig',
-          'X-Amz-Date': new Date().toUTCString(),
-        },
-      });
-    } catch (err) {
-      res = err.response;
-    }
-    expect(res.statusCode).to.equal(403);
-    expect(res.body).to.contain('<Code>SignatureDoesNotMatch</Code>');
-  });
-
-  it('rejects a request with an incorrect signature in query params [v2]', async function () {
-    let res;
-    try {
-      res = await request('bucket-a/mykey', {
-        baseUrl: s3Client.endpoint.href,
-        qs: {
-          AWSAccessKeyId: 'S3RVER',
-          Signature: 'badsig',
-          Expires: (Date.now() / 1000).toFixed() + 900,
-        },
-      });
-    } catch (err) {
-      res = err.response;
-    }
-    expect(res.statusCode).to.equal(403);
-    expect(res.body).to.contain('<Code>SignatureDoesNotMatch</Code>');
-  });
-
   it('rejects a request with a large time skew', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {
         baseUrl: s3Client.endpoint.href,
         headers: {
-          Authorization: 'AWS S3RVER:dummysig',
-          // 20 minutes in the future
+          Authorization:
+            'AWS4-HMAC-SHA256 Credential=S3RVER/20060301/us-east-1/s3/aws4_request, SignedHeaders=host, Signature=badsig',
+          'X-Amz-Content-SHA256': 'UNSIGNED-PAYLOAD',
           'X-Amz-Date': new Date(Date.now() + 20000 * 60).toUTCString(),
         },
       });
@@ -217,23 +165,6 @@ describe('REST Authentication', () => {
     }
     expect(res.statusCode).to.equal(403);
     expect(res.body).to.contain('<Code>RequestTimeTooSkewed</Code>');
-  });
-
-  it('rejects an expired presigned request [v2]', async function () {
-    s3Client.config.set('signatureVersion', 's3');
-    const url = s3Client.getSignedUrl('getObject', {
-      Bucket: 'bucket-a',
-      Key: 'mykey',
-      Expires: -10, // 10 seconds in the past
-    });
-    let res;
-    try {
-      res = await request(url);
-    } catch (err) {
-      res = err.response;
-    }
-    expect(res.statusCode).to.equal(403);
-    expect(res.body).to.contain('<Code>AccessDenied</Code>');
   });
 
   it('rejects an expired presigned request [v4]', async function () {
