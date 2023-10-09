@@ -114,7 +114,7 @@ export const deleteObject = async function deleteObject(ctx) {
  * {@link https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html}
  */
 export const getObject = async function getObject(ctx) {
-  const options = {};
+  const options: any = {};
   if (/^bytes=/.test(ctx.headers.range)) {
     const [start, end] = ctx.headers.range.replace('bytes=', '').split('-');
     options.start = Number(start);
@@ -484,8 +484,8 @@ export const putObject = async function putObject(ctx) {
 export const putObjectCopy = async function putObjectCopy(ctx) {
   let copySource = decodeURI(ctx.headers['x-amz-copy-source']);
   copySource = copySource.startsWith('/') ? copySource.slice(1) : copySource;
-  let [srcBucket, ...srcKey] = copySource.split('/');
-  srcKey = srcKey.join('/');
+  let [srcBucket, ...srcKeys] = copySource.split('/');
+  const srcKey = srcKeys.join('/');
 
   const destBucket = ctx.params.bucket;
   const destKey = ctx.params.key;
@@ -725,8 +725,8 @@ export const uploadPart = async function uploadPart(ctx) {
 export const uploadPartCopy = async function uploadPartCopy(ctx) {
   let copySource = decodeURI(ctx.headers['x-amz-copy-source']);
   copySource = copySource.startsWith('/') ? copySource.slice(1) : copySource;
-  let [srcBucket, ...srcKey] = copySource.split('/');
-  srcKey = srcKey.join('/');
+  let [srcBucket, ...srcKeys] = copySource.split('/');
+  const srcKey = srcKeys.join('/');
 
   const bucket = await ctx.store.getBucket(srcBucket);
   if (!bucket) {
@@ -736,7 +736,7 @@ export const uploadPartCopy = async function uploadPartCopy(ctx) {
     });
   }
 
-  const options = {};
+  const options: any = {};
   if ('x-amz-copy-source-range' in ctx.headers) {
     const match = /^bytes=(\d+)-(\d+)$/.exec(
       ctx.headers['x-amz-copy-source-range'],

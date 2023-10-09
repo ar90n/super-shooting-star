@@ -129,7 +129,7 @@ export const deleteBucketWebsite = async function deleteBucketWebsite(ctx) {
  * {@link https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html}
  */
 export const getBucket = async function getBucket(ctx) {
-  const options = {
+  const options: any = {
     delimiter: ctx.query.delimiter || undefined,
     encodingType: ctx.query['encoding-type'], // currently unimplemented
     maxKeys: 1000,
