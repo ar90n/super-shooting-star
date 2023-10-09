@@ -12,7 +12,6 @@ export default function (app, silent) {
     transports: [
       new transports.Console({
         level: 'debug',
-        json: false,
         format: format.combine(
           format.colorize(),
           format.splat(),
@@ -23,7 +22,6 @@ export default function (app, silent) {
     ],
     exitOnError: false,
   });
-  logger.emitErrs = true;
   app.logger = app.context.logger = logger;
 
   return koaLogger((message, args) => {

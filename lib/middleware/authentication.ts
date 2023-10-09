@@ -241,14 +241,14 @@ function parseHeader(headers) {
 
   const serverTime = new Date();
   const requestTime = parseDate(request.time);
-  if (isNaN(requestTime)) {
+  if (isNaN(requestTime.getTime())) {
     throw new S3Error(
       'AccessDenied',
       'AWS authentication requires a valid Date or x-amz-date header',
     );
   }
 
-  if (Math.abs(serverTime - requestTime) > 900000) {
+  if (Math.abs(serverTime.getTime() - requestTime.getTime()) > 900000) {
     // 15 minutes
     throw new S3Error(
       'RequestTimeTooSkewed',
