@@ -22,6 +22,8 @@ import { concatStreams, walk, ensureDir } from '../utils';
 const S3RVER_SUFFIX = '%s._S3rver_%s';
 
 class FilesystemStore {
+  rootDirectory: any;
+
   static decodeKeyPath(keyPath) {
     return process.platform === 'win32'
       ? keyPath.replace(/&../g, (ent) =>
@@ -63,7 +65,7 @@ class FilesystemStore {
     const [storedMetadata, md5] = await Promise.all([
       fs
         .readFile(metadataPath)
-        .then(JSON.parse)
+        .then((buf) => JSON.parse(buf.toString()))
         .catch((err) => {
           if (err.code === 'ENOENT') return undefined;
           throw err;
@@ -74,11 +76,17 @@ class FilesystemStore {
         .catch(async (err) => {
           if (err.code !== 'ENOENT') throw err;
           // create the md5 file if it doesn't already exist
-          const md5 = await new Promise((resolve, reject) => {
+          const md5: string = await new Promise((resolve, reject) => {
             const stream = createReadStream(objectPath);
             const md5Context = crypto.createHash('md5');
             stream.on('error', reject);
-            stream.on('data', (chunk) => md5Context.update(chunk, 'utf8'));
+            stream.on('data', (chunk) => {
+              if (chunk instanceof Buffer) {
+                md5Context.update(chunk.toString(), 'utf8');
+              } else {
+                md5Context.update(chunk, 'utf8');
+              }
+            });
             stream.on('end', () => resolve(md5Context.digest('hex')));
           });
           await fs.writeFile(`${objectPath}.md5`, md5);
@@ -94,7 +102,7 @@ class FilesystemStore {
     };
   }
 
-  async putMetadata(bucket, key, metadata, md5) {
+  async putMetadata(bucket, key, metadata, md5?) {
     const metadataPath = this.getResourcePath(bucket, key, 'metadata.json');
     const md5Path = this.getResourcePath(bucket, key, 'object.md5');
 
@@ -107,7 +115,7 @@ class FilesystemStore {
     await fs.writeFile(metadataPath, JSON.stringify(json, null, 2));
   }
 
-  async putContent(objectPath, content) {
+  async putContent(objectPath, content): Promise<[number, string]> {
     return new Promise((resolve, reject) => {
       const writeStream = createWriteStream(objectPath);
       const md5Context = crypto.createHash('md5');
@@ -422,7 +430,9 @@ class FilesystemStore {
     );
     const [key, metadata] = await Promise.all([
       fs.readFile(path.join(uploadDir, 'key')).then((data) => data.toString()),
-      fs.readFile(path.join(uploadDir, 'metadata')).then(JSON.parse),
+      fs
+        .readFile(path.join(uploadDir, 'metadata'))
+        .then((buf) => JSON.parse(buf.toString())),
     ]);
     const partStreams = sortBy(parts, (part) => part.number).map((part) =>
       createReadStream(path.join(uploadDir, part.number.toString())),

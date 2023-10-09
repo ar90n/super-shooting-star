@@ -29,6 +29,7 @@ class S3Object {
   key: string;
   content: any;
   metadata: any;
+  range: any;
 
   constructor(bucket, key, content, metadata) {
     this.bucket = bucket;
