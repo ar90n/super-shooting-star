@@ -103,7 +103,7 @@ export default () =>
       .join('/');
 
     // begin parsing for each part of the signature algorithm and the rest of the canonical request
-    const request = mechanisms.header
+    const request: any = mechanisms.header
       ? parseHeader(ctx.headers)
       : mechanisms.queryV4
       ? v4.parseQuery(ctx.query)
@@ -149,10 +149,6 @@ export default () =>
     };
 
     switch (request.signature.version) {
-      case 2:
-        // S3 signing uses expiration time as timestamp
-        canonicalRequest.timestamp = request.expires;
-        break;
       case 4:
         canonicalRequest.timestamp = request.time;
         break;

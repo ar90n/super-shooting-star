@@ -29,7 +29,7 @@ export const parseHeader = function (headers) {
     );
   }
 
-  const componentMap = new Map(
+  const componentMap = new Map<string, string>(
     headers.authorization
       .split(' ')
       .slice(1)
@@ -212,6 +212,8 @@ export const getSigningKey = function (secretKey, date, region, service) {
 };
 
 class AwsChunkedTransform extends Transform {
+  chunkDecoderState: any;
+
   constructor(expectedContentLength) {
     super();
 
