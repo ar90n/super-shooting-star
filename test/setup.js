@@ -22,7 +22,7 @@ afterEach(async function () {
   await Promise.all(
     [...instances].map(async (instance) => {
       try {
-        await instance.close();
+        instance.close();
       } catch (err) {
         console.warn(err);
       }

@@ -1,5 +1,6 @@
 'use strict';
 
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import AWS from 'aws-sdk';
 import pkg from 'aws4';
 import crypto from 'crypto';
@@ -43,9 +44,13 @@ export const generateTestObjects = function generateTestObjects(
     Body: 'Hello!',
   }));
 
-  return pMap(objects, (object) => s3Client.putObject(object).promise(), {
-    concurrency: 100,
-  });
+  return pMap(
+    objects,
+    (object) => s3Client.send(new PutObjectCommand(object)),
+    {
+      concurrency: 100,
+    },
+  );
 };
 
 export const md5 = (data) =>
@@ -71,6 +76,26 @@ export const createServerAndClient = async function createServerAndClient(
     sslEnabled: false,
     s3ForcePathStyle: true,
     signatureVersion: 'v4',
+  });
+
+  return { s3rver, s3Client };
+};
+
+export const createServerAndClient2 = async function createServerAndClient2(
+  options,
+) {
+  const s3rver = new S3rver(options);
+  const { port } = await s3rver.run();
+  instances.add(s3rver);
+
+  const s3Client = new S3Client({
+    credentials: {
+      accessKeyId: 'S3RVER',
+      secretAccessKey: 'S3RVER',
+    },
+    endpoint: `http://localhost:${port}`,
+    forcePathStyle: true,
+    region: 'localhost',
   });
 
   return { s3rver, s3Client };
@@ -110,4 +135,9 @@ export const StreamingRequestSigner = class extends RequestSigner {
           hash(this.chunkData, 'hex'),
         ].join('\n');
   }
+};
+
+export const getEndpointHref = async (s3Client) => {
+  const { hostname, port, protocol, path } = await s3Client.config.endpoint();
+  return `${protocol}//${hostname}:${port}${path}`;
 };
