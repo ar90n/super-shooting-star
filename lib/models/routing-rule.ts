@@ -1,13 +1,17 @@
 'use strict';
 
 class RoutingRule {
-  constructor(config) {
+  condition: any;
+  redirect: any;
+  statusCode: number;
+
+  constructor(config: { Condition: any; Redirect: any }) {
     this.condition = config.Condition;
     this.redirect = config.Redirect;
     this.statusCode = (this.redirect && this.redirect.HttpRedirectCode) || 301;
   }
 
-  getRedirectLocation(key, defaults) {
+  getRedirectLocation(key: string, defaults: Location): string {
     let redirectKey = key;
 
     if (this.redirect.ReplaceKeyPrefixWith) {
@@ -25,7 +29,7 @@ class RoutingRule {
     return `${protocol}://${hostName}/${redirectKey}`;
   }
 
-  shouldRedirect(key, statusCode) {
+  shouldRedirect(key: string, statusCode: number): boolean {
     if (!this.condition) {
       return true;
     }

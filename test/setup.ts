@@ -5,7 +5,8 @@ import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import os from 'os';
 import path from 'path';
-import S3rver from '..';
+import S3rver from '../lib/s3rver.js';
+import { beforeEach, afterEach } from '@jest/globals';
 import { resetTmpDir, instances } from './helpers';
 
 chai.use(chaiAsPromised);

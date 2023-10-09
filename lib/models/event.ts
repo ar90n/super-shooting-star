@@ -3,11 +3,18 @@
 import crypto from 'crypto';
 import { randomHexString } from '../utils';
 
+type S3Object = {
+  key: any;
+  sequencer: string;
+  size?: number;
+  eTag?: string;
+};
+
 class S3Event {
   constructor(eventData, reqParams) {
     const { reqHeaders, sourceIp } = reqParams;
     let eventName = '';
-    const s3Object = {
+    const s3Object: S3Object = {
       key: eventData.S3Item.key,
       sequencer: Date.now().toString(16).toUpperCase(),
     };

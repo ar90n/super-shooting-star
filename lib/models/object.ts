@@ -4,6 +4,32 @@ import { pick, pickBy } from 'lodash-es';
 import S3Error from './error';
 
 class S3Object {
+  static ALLOWED_METADATA: string[] = [
+    'cache-control',
+    'content-disposition',
+    'content-encoding',
+    'content-language',
+    'content-type',
+    'expires',
+    'x-amz-storage-class',
+    'x-amz-website-redirect-location',
+  ];
+  static STORAGE_CLASSES: string[] = [
+    'STANDARD',
+    'REDUCED_REDUNDANCY',
+    'STANDARD_IA',
+    'ONEZONE_IA',
+    'INTELLIGENT_TIERING',
+    'GLACIER',
+    'DEEP_ARCHIVE',
+    'OUTPOSTS',
+  ];
+
+  bucket: string;
+  key: string;
+  content: any;
+  metadata: any;
+
   constructor(bucket, key, content, metadata) {
     this.bucket = bucket;
     this.key = key;
@@ -41,24 +67,4 @@ class S3Object {
     return new Date(this.metadata['last-modified']);
   }
 }
-S3Object.ALLOWED_METADATA = [
-  'cache-control',
-  'content-disposition',
-  'content-encoding',
-  'content-language',
-  'content-type',
-  'expires',
-  'x-amz-storage-class',
-  'x-amz-website-redirect-location',
-];
-S3Object.STORAGE_CLASSES = [
-  'STANDARD',
-  'REDUCED_REDUNDANCY',
-  'STANDARD_IA',
-  'ONEZONE_IA',
-  'INTELLIGENT_TIERING',
-  'GLACIER',
-  'DEEP_ARCHIVE',
-  'OUTPOSTS',
-];
 export default S3Object;

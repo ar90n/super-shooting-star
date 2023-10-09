@@ -2,7 +2,6 @@
 
 import { XMLParser, XMLBuilder, XMLValidator } from 'fast-xml-parser';
 import { escapeRegExp } from 'lodash-es';
-import he from 'he';
 import S3Error from './error';
 import RoutingRule from './routing-rule';
 
@@ -20,12 +19,15 @@ export const getConfigModel = function getConfigModel(type) {
 };
 
 class S3ConfigBase {
+  type: string;
+  rawConfig: any;
+
   /**
    * Validates a given XML config against S3's spec.
    * @param {string} xml
    * @returns S3Config
    */
-  static validate() {
+  static validate(xml: string) {
     throw new Error('Not implemented');
   }
 
@@ -34,23 +36,19 @@ class S3ConfigBase {
    * @param {string} type
    * @param {string} config
    */
-  constructor(type, config) {
+  constructor(type: string, config: string) {
     if (this.constructor === S3ConfigBase) {
       throw new Error('Cannot create an instance of an abstract class');
     }
     this.type = type;
-    this.rawConfig = xmlParser.parse(config, {
-      ignoreAttributes: false,
-      parseNodeValue: true,
-      tagValueProcessor: he.decode,
-    });
+    this.rawConfig = xmlParser.parse(config);
   }
 
-  toJSON() {
+  toJSON(): any {
     return this.rawConfig;
   }
 
-  toXML(space) {
+  toXML(space): any {
     const builder = new XMLBuilder({
       ignoreAttributes: false,
       format: typeof space === 'number',
@@ -61,6 +59,9 @@ class S3ConfigBase {
 }
 
 export class S3CorsConfiguration extends S3ConfigBase {
+  static allowedMethods: any[] = [];
+  rules: any[];
+
   static validate(xml) {
     if (XMLValidator.validate(xml) !== true) {
       throw new S3Error(
@@ -152,6 +153,10 @@ export class S3CorsConfiguration extends S3ConfigBase {
 S3CorsConfiguration.allowedMethods = ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'];
 
 export class S3WebsiteConfiguration extends S3ConfigBase {
+  indexDocumentSuffix: any;
+  errorDocumentKey: any;
+  routingRules: any[];
+
   static validate(xml) {
     if (XMLValidator.validate(xml) !== true) {
       throw new S3Error(
@@ -345,6 +350,8 @@ export class S3WebsiteConfiguration extends S3ConfigBase {
 }
 
 export class TaggingConfiguration extends S3ConfigBase {
+  static EMPTY: TaggingConfiguration;
+
   static validate(xml) {
     if (XMLValidator.validate(xml) !== true) {
       throw new S3Error(

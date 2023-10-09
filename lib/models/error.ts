@@ -5,6 +5,14 @@ import { XMLBuilder } from 'fast-xml-parser';
 import he from 'he';
 
 class S3Error extends Error {
+  code: any;
+  detail: any;
+  errors: any[];
+  headers: any;
+  status: any;
+  expose: any;
+  description: any;
+
   static fromError(err) {
     return Object.assign(
       new S3Error(

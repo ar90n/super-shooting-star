@@ -1,4 +1,10 @@
 class AWSAccount {
+  static registry: Map<string, AWSAccount>;
+
+  id: string;
+  displayName: string;
+  accessKeys: Map<string, string>;
+
   constructor(accountId, displayName) {
     this.id = accountId;
     this.displayName = displayName;
