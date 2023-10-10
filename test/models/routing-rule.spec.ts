@@ -1,5 +1,6 @@
 'use strict';
 
+import { describe, test } from '@jest/globals';
 import { expect } from 'chai';
 import RoutingRule from '../../lib/models/routing-rule';
 
@@ -10,13 +11,13 @@ describe('RoutingRule', () => {
     const matchingStatusCode = 404;
     const nonMatchStatusCode = 200;
 
-    it('redirects with no condition', () => {
+    test('redirects with no condition', () => {
       const rule = new RoutingRule({});
 
       expect(rule.shouldRedirect('key', 200)).to.exist;
     });
 
-    it('redirects using only KeyPrefixEquals', () => {
+    test('redirects using only KeyPrefixEquals', () => {
       const rule = new RoutingRule({
         Condition: {
           KeyPrefixEquals: 'prefix',
@@ -27,7 +28,7 @@ describe('RoutingRule', () => {
       expect(rule.shouldRedirect(nonMatchKey, 200)).to.be.false;
     });
 
-    it('redirects using only HttpErrorCodeReturnedEquals', () => {
+    test('redirects using only HttpErrorCodeReturnedEquals', () => {
       const rule = new RoutingRule({
         Condition: {
           HttpErrorCodeReturnedEquals: 404,
@@ -38,7 +39,7 @@ describe('RoutingRule', () => {
       expect(rule.shouldRedirect('key', nonMatchStatusCode)).to.be.false;
     });
 
-    it('redirects using both KeyPrefixEquals and HttpErrorCodeReturnedEquals', () => {
+    test('redirects using both KeyPrefixEquals and HttpErrorCodeReturnedEquals', () => {
       const rule = new RoutingRule({
         Condition: {
           KeyPrefixEquals: 'prefix',
@@ -59,7 +60,7 @@ describe('RoutingRule', () => {
       hostname: 'example.com',
     };
 
-    it('redirects using only HostName', () => {
+    test('redirects using only HostName', () => {
       const rule = new RoutingRule({
         Redirect: {
           HostName: 'localhost',
@@ -72,7 +73,7 @@ describe('RoutingRule', () => {
       );
     });
 
-    it('redirects using only HttpRedirectCode', () => {
+    test('redirects using only HttpRedirectCode', () => {
       const rule = new RoutingRule({
         Redirect: {
           HttpRedirectCode: 307,
@@ -85,7 +86,7 @@ describe('RoutingRule', () => {
       );
     });
 
-    it('redirects using only Protocol', () => {
+    test('redirects using only Protocol', () => {
       const rule = new RoutingRule({
         Redirect: {
           Protocol: 'http',
@@ -98,7 +99,7 @@ describe('RoutingRule', () => {
       );
     });
 
-    it('redirects using only ReplaceKeyPrefixWith', () => {
+    test('redirects using only ReplaceKeyPrefixWith', () => {
       const rule = new RoutingRule({
         Condition: {
           KeyPrefixEquals: 'prefix',
@@ -114,7 +115,7 @@ describe('RoutingRule', () => {
       );
     });
 
-    it('replaces blank prefix with ReplaceKeyPrefixWith', () => {
+    test('replaces blank prefix with ReplaceKeyPrefixWith', () => {
       const rule = new RoutingRule({
         Redirect: {
           ReplaceKeyPrefixWith: 'replacement/',
@@ -127,7 +128,7 @@ describe('RoutingRule', () => {
       );
     });
 
-    it('redirects using only ReplaceKeyWith', () => {
+    test('redirects using only ReplaceKeyWith', () => {
       const rule = new RoutingRule({
         Redirect: {
           ReplaceKeyWith: 'replacement',
@@ -140,7 +141,7 @@ describe('RoutingRule', () => {
       );
     });
 
-    it('redirects using a combination of options', () => {
+    test('redirects using a combination of options', () => {
       const rule = new RoutingRule({
         Condition: {
           KeyPrefixEquals: 'prefix',

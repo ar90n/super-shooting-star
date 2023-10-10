@@ -5,13 +5,13 @@ class RoutingRule {
   redirect: any;
   statusCode: number;
 
-  constructor(config: { Condition: any; Redirect: any }) {
+  constructor(config: any) {
     this.condition = config.Condition;
     this.redirect = config.Redirect;
     this.statusCode = (this.redirect && this.redirect.HttpRedirectCode) || 301;
   }
 
-  getRedirectLocation(key: string, defaults: Location): string {
+  getRedirectLocation(key: string, defaults: any): string {
     let redirectKey = key;
 
     if (this.redirect.ReplaceKeyPrefixWith) {
