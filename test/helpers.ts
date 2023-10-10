@@ -1,6 +1,10 @@
 'use strict';
 
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  PutObjectAclCommandInput,
+} from '@aws-sdk/client-s3';
 import AWS from 'aws-sdk';
 import pkg from 'aws4';
 import crypto from 'crypto';
@@ -15,7 +19,7 @@ const { RequestSigner } = pkg;
 
 const tmpDir = path.join(os.tmpdir(), 's3rver_test');
 
-export const instances = new Set();
+export const instances: Set<S3rver> = new Set();
 
 export const resetTmpDir = function resetTmpDir() {
   try {
@@ -46,7 +50,8 @@ export const generateTestObjects = function generateTestObjects(
 
   return pMap(
     objects,
-    (object) => s3Client.send(new PutObjectCommand(object)),
+    (object: PutObjectAclCommandInput) =>
+      s3Client.send(new PutObjectCommand(object)),
     {
       concurrency: 100,
     },
@@ -102,6 +107,8 @@ export const createServerAndClient2 = async function createServerAndClient2(
 };
 
 export const StreamingRequestSigner = class extends RequestSigner {
+  previousSignature: any;
+  chunkData: any;
   prepareRequest() {
     this.request.headers['X-Amz-Content-Sha256'] =
       'STREAMING-AWS4-HMAC-SHA256-PAYLOAD';
@@ -137,7 +144,7 @@ export const StreamingRequestSigner = class extends RequestSigner {
   }
 };
 
-export const getEndpointHref = async (s3Client) => {
+export const getEndpointHref = async (s3Client: S3Client) => {
   const { hostname, port, protocol, path } = await s3Client.config.endpoint();
   return `${protocol}//${hostname}:${port}${path}`;
 };
