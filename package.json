@@ -1,7 +1,7 @@
 {
-  "name": "s3rver",
-  "version": "4.0.0",
-  "description": "Fake S3 server for node",
+  "name": "super-shooting-star",
+  "version": "0.1.0",
+  "description": "Fake S3 server with Typescript",
   "type": "module",
   "keywords": [
     "fake",
@@ -13,19 +13,19 @@
     "amazon"
   ],
   "author": {
-    "name": "Jamie Hall",
-    "email": "hello@jamiehall.eu",
-    "url": "http://github.com/jamhall/s3rver"
+    "name": "Masahiro Wada",
+    "email": "argon.argon.argon@gmail.com",
+    "url": "http://github.com/ar90n/super-shooting-star"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git@github.com:jamhall/s3rver.git"
+    "url": "git@github.com:ar90n/super-shooting-star.git"
   },
   "bugs": {
-    "url": "https://github.com/jamhall/s3rver/issues"
+    "url": "https://github.com/ar90n/super-shooting-star/issues"
   },
-  "homepage": "https://github.com/jamhall/s3rver",
+  "homepage": "https://github.com/ar90n/super-shooting-star",
   "scripts": {
     "coverage": "nyc npm test",
     "test": "NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand ./test/",
@@ -44,7 +44,7 @@
     "test": "./test"
   },
   "engines": {
-    "node": ">=12.13.0"
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@koa/router": "^10.0.0",
