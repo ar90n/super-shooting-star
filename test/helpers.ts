@@ -5,7 +5,6 @@ import {
   PutObjectCommand,
   PutObjectAclCommandInput,
 } from '@aws-sdk/client-s3';
-import AWS from 'aws-sdk';
 import pkg from 'aws4';
 import crypto from 'crypto';
 import { XMLParser } from 'fast-xml-parser';
@@ -67,32 +66,7 @@ export const parseXml = (data) => {
   return xmlParser.parse(data);
 };
 
-export const createServerAndClient = async function createServerAndClient(
-  options,
-) {
-  const s3rver = new S3rver(options);
-  const { port } = await s3rver.run();
-  instances.add(s3rver);
-
-  const s3Client = new AWS.S3({
-    accessKeyId: 'S3RVER',
-    secretAccessKey: 'S3RVER',
-    endpoint: `localhost:${port}`,
-    sslEnabled: false,
-    s3ForcePathStyle: true,
-    signatureVersion: 'v4',
-  });
-
-  return { s3rver, s3Client };
-};
-
-export const createServerAndClient2 = async function createServerAndClient2(
-  options,
-) {
-  const s3rver = new S3rver(options);
-  const { port } = await s3rver.run();
-  instances.add(s3rver);
-
+export const createClient = (port: number) => {
   const s3Client = new S3Client({
     credentials: {
       accessKeyId: 'S3RVER',
@@ -103,6 +77,17 @@ export const createServerAndClient2 = async function createServerAndClient2(
     region: 'localhost',
   });
 
+  return s3Client;
+};
+
+export const createServerAndClient2 = async function createServerAndClient2(
+  options,
+) {
+  const s3rver = new S3rver(options);
+  const { port } = await s3rver.run();
+  instances.add(s3rver);
+
+  const s3Client = createClient(port);
   return { s3rver, s3Client };
 };
 
