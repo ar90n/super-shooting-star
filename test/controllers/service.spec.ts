@@ -1,5 +1,6 @@
 'use strict';
 
+import { describe, test } from '@jest/globals';
 import { expect } from 'chai';
 import { ListBucketsCommand } from '@aws-sdk/client-s3';
 import { zip } from 'lodash-es';
@@ -17,12 +18,12 @@ describe('Operations on the Service', () => {
       { name: 'bucket6' },
     ];
 
-    it('returns a list of buckets', async function () {
+    test('returns a list of buckets', async function () {
       const { s3Client } = await createServerAndClient2({
         configureBuckets: buckets,
       });
       const data = await s3Client.send(new ListBucketsCommand({}));
-      data.Buckets.sort((lhs, rhs) => lhs.Name > rhs.Name);
+      data.Buckets.sort((lhs, rhs) => (lhs.Name > rhs.Name ? 1 : -1));
       for (const [bucket, config] of zip(data.Buckets, buckets)) {
         expect(bucket.Name).to.equal(config.name);
         expect(moment(bucket.CreationDate).isValid()).to.be.true;

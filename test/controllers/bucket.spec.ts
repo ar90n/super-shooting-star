@@ -1,5 +1,6 @@
 'use strict';
 
+import { describe, test, beforeEach, afterEach } from '@jest/globals';
 import { createRequire } from 'node:module';
 import { expect } from 'chai';
 import {
@@ -93,7 +94,7 @@ describe('Operations on Buckets', () => {
       expect(error.$response.statusCode).to.equal(409);
     });
 
-    it('fails to fetch a deleted bucket', async function () {
+    test('fails to fetch a deleted bucket', async function () {
       let error;
       await s3Client.send(new DeleteBucketCommand({ Bucket: 'bucket-a' }));
       try {
@@ -274,7 +275,7 @@ describe('Operations on Buckets', () => {
       expect(find(data.Contents, { Key: 'akey3' })).to.not.exist;
     });
 
-    it('lists objects in a bucket starting after a key', async function () {
+    test('lists objects in a bucket starting after a key', async function () {
       const testObjects = [
         'akey1',
         'akey2',
