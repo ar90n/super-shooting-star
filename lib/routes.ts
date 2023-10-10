@@ -165,7 +165,7 @@ router
       case undefined:
         return objectCtrl.deleteObject(ctx);
       case 'tagging':
-        throw new S3Error('NotImplemented');
+        throw new S3Error('NotImplemented', '');
       default:
         ctx.state.methodIsNotAllowed = true;
     }
@@ -197,7 +197,7 @@ router
         return objectCtrl.initiateMultipartUpload(ctx);
       case undefined:
       case 'select':
-        throw new S3Error('NotImplemented');
+        throw new S3Error('NotImplemented', '');
       default:
         ctx.state.methodIsNotAllowed = true;
     }

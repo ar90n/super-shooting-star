@@ -112,7 +112,7 @@ export const parseQuery = function (query) {
   };
 
   const requestTime = parseISO8601String(request.time);
-  if (isNaN(requestTime)) {
+  if (isNaN(requestTime.getTime())) {
     throw new S3Error(
       'AuthorizationQueryParametersError',
       "X-Amz-Date must be in the ISO8601 Long Format \"yyyyMMdd'T'HHmmss'Z'\"",

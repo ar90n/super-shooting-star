@@ -34,7 +34,7 @@ function decipherContinuationToken(token) {
   ]).toString('utf8');
 }
 
-export const bucketExists = async function bucketExists(ctx, next) {
+export const bucketExists = async function bucketExists(ctx, next?) {
   const bucketName = ctx.params.bucket;
   const bucket = await ctx.app.store.getBucket(bucketName);
   if (!bucket) {
