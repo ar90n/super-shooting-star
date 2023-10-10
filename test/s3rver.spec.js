@@ -328,7 +328,7 @@ describe('S3rver', () => {
         forcePathStyle: true,
         region: 'localhost',
       });
-      const res = await s3Client.listBuckets().promise();
+      const res = await s3Client.send(new ListBucketsCommand({}));
       expect(res.Buckets).toHaveLength(2);
       await s3Client.send(
         new PutObjectCommand({
