@@ -1,5 +1,6 @@
 'use strict';
 
+import { describe, test, beforeEach } from '@jest/globals';
 import { createRequire } from 'node:module';
 import { expect } from 'chai';
 import express from 'express';
@@ -28,7 +29,7 @@ describe('REST Authentication', () => {
     }));
   });
 
-  it('can GET a signed URL with subdomain bucket', async function () {
+  test('can GET a signed URL with subdomain bucket', async function () {
     await s3Client
       .putObject({ Bucket: 'bucket-a', Key: 'text', Body: 'Hello!' })
       .promise();
@@ -49,7 +50,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.equal('Hello!');
   });
 
-  it('can GET a signed URL with vhost bucket', async function () {
+  test('can GET a signed URL with vhost bucket', async function () {
     await s3Client
       .putObject({ Bucket: 'bucket-a', Key: 'text', Body: 'Hello!' })
       .promise();
@@ -73,7 +74,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.equal('Hello!');
   });
 
-  it('rejects a request specifying multiple auth mechanisms', async function () {
+  test('rejects a request specifying multiple auth mechanisms', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {
@@ -93,7 +94,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>InvalidArgument</Code>');
   });
 
-  it('rejects a request with signature version 2', async function () {
+  test('rejects a request with signature version 2', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {
@@ -109,7 +110,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>InvalidArgument</Code>');
   });
 
-  it('rejects a request with an invalid authorization header [v4]', async function () {
+  test('rejects a request with an invalid authorization header [v4]', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {
@@ -128,7 +129,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>AuthorizationHeaderMalformed</Code>');
   });
 
-  it('rejects a request with invalid query params [v4]', async function () {
+  test('rejects a request with invalid query params [v4]', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {
@@ -148,7 +149,7 @@ describe('REST Authentication', () => {
     );
   });
 
-  it('rejects a request with a large time skew', async function () {
+  test('rejects a request with a large time skew', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {
@@ -167,7 +168,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>RequestTimeTooSkewed</Code>');
   });
 
-  it('rejects an expired presigned request [v4]', async function () {
+  test('rejects an expired presigned request [v4]', async function () {
     s3Client.config.set('signatureVersion', 'v4');
     const url = s3Client.getSignedUrl('getObject', {
       Bucket: 'bucket-a',
@@ -184,7 +185,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>AccessDenied</Code>');
   });
 
-  it('rejects a presigned request with an invalid expiration [v4]', async function () {
+  test('rejects a presigned request with an invalid expiration [v4]', async function () {
     // aws-sdk unfortunately doesn't expose a way to set the timestamp of the request to presign
     // so we have to construct a mostly-valid request ourselves
     let res;
@@ -208,7 +209,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>AccessDenied</Code>');
   });
 
-  it('overrides response headers in signed GET requests', async function () {
+  test('overrides response headers in signed GET requests', async function () {
     await s3Client
       .putObject({
         Bucket: 'bucket-a',
@@ -229,7 +230,7 @@ describe('REST Authentication', () => {
     expect(res.headers['content-disposition']).to.equal('attachment');
   });
 
-  it('rejects anonymous requests with response header overrides in GET requests', async function () {
+  test('rejects anonymous requests with response header overrides in GET requests', async function () {
     await s3Client
       .putObject({
         Bucket: 'bucket-a',
@@ -254,7 +255,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>InvalidRequest</Code>');
   });
 
-  it('adds x-amz-meta-* metadata specified via query parameters', async function () {
+  test('adds x-amz-meta-* metadata specified via query parameters', async function () {
     const url = s3Client.getSignedUrl('putObject', {
       Bucket: 'bucket-a',
       Key: 'mykey',
@@ -272,7 +273,7 @@ describe('REST Authentication', () => {
     expect(object.Metadata).to.have.property('somekey', 'value');
   });
 
-  it('can use signed URLs while mounted on a subpath', async function () {
+  test('can use signed URLs while mounted on a subpath', async function () {
     const app = express();
     app.use('/basepath', s3rver.getMiddleware());
 
@@ -294,7 +295,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.equal('Hello!');
   });
 
-  it('can use signed vhost URLs while mounted on a subpath', async function () {
+  test('can use signed vhost URLs while mounted on a subpath', async function () {
     await s3Client
       .putObject({ Bucket: 'bucket-a', Key: 'text', Body: 'Hello!' })
       .promise();
@@ -326,7 +327,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.equal('Hello!');
   });
 
-  it('rejects a request with an incorrect signature in header [v4]', async function () {
+  test('rejects a request with an incorrect signature in header [v4]', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {
@@ -345,7 +346,7 @@ describe('REST Authentication', () => {
     expect(res.body).to.contain('<Code>SignatureDoesNotMatch</Code>');
   });
 
-  it('rejects a request with an incorrect signature in query params [v4]', async function () {
+  test('rejects a request with an incorrect signature in query params [v4]', async function () {
     let res;
     try {
       res = await request('bucket-a/mykey', {

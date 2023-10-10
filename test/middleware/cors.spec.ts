@@ -1,11 +1,12 @@
 'use strict';
 
+import { describe, test, beforeEach } from '@jest/globals';
 import { createRequire } from 'node:module';
 import AWS from 'aws-sdk';
 import { expect } from 'chai';
 import fs from 'fs';
 
-import S3rver from '../..';
+import S3rver from '../../lib/s3rver';
 
 const require = createRequire(import.meta.url);
 const request = require('request-promise-native').defaults({
@@ -21,7 +22,7 @@ describe('CORS Policy Tests', function () {
     },
   ];
 
-  it('fails to initialize a configuration with multiple wildcard characters', async function () {
+  test('fails to initialize a configuration with multiple wildcard characters', async function () {
     let error;
     try {
       const server = new S3rver({
@@ -43,7 +44,7 @@ describe('CORS Policy Tests', function () {
     expect(error.message).to.include(' can not have more than one wildcard.');
   });
 
-  it('fails to initialize a configuration with an illegal AllowedMethod', async function () {
+  test('fails to initialize a configuration with an illegal AllowedMethod', async function () {
     const server = new S3rver({
       configureBuckets: [
         {
@@ -67,7 +68,7 @@ describe('CORS Policy Tests', function () {
     );
   });
 
-  it('fails to initialize a configuration with missing required fields', async function () {
+  test('fails to initialize a configuration with missing required fields', async function () {
     const server = new S3rver({
       configureBuckets: [
         {
@@ -89,7 +90,7 @@ describe('CORS Policy Tests', function () {
     expect(error.code).to.equal('MalformedXML');
   });
 
-  it('deletes a CORS configuration in an configured bucket', async function () {
+  test('deletes a CORS configuration in an configured bucket', async function () {
     const server = new S3rver({
       configureBuckets: [buckets[0]],
     });
@@ -114,7 +115,7 @@ describe('CORS Policy Tests', function () {
     expect(error.code).to.equal('NoSuchCORSConfiguration');
   });
 
-  it('adds the Access-Control-Allow-Origin header for a wildcard origin', async function () {
+  test('adds the Access-Control-Allow-Origin header for a wildcard origin', async function () {
     const origin = 'http://a-test.example.com';
     const bucket = {
       name: 'foobars',
@@ -157,7 +158,7 @@ describe('CORS Policy Tests', function () {
     }
   });
 
-  it('adds the Access-Control-Allow-Origin header for a matching origin', async function () {
+  test('adds the Access-Control-Allow-Origin header for a matching origin', async function () {
     const origin = 'http://a-test.example.com';
     const server = new S3rver({
       configureBuckets: [buckets[0]],
@@ -198,7 +199,7 @@ describe('CORS Policy Tests', function () {
     }
   });
 
-  it('matches an origin to a CORSRule with a wildcard character', async function () {
+  test('matches an origin to a CORSRule with a wildcard character', async function () {
     const origin = 'http://foo.bar.com';
     const server = new S3rver({
       configureBuckets: [buckets[0]],
@@ -239,7 +240,7 @@ describe('CORS Policy Tests', function () {
     }
   });
 
-  it('omits the Access-Control-Allow-Origin header for a non-matching origin', async function () {
+  test('omits the Access-Control-Allow-Origin header for a non-matching origin', async function () {
     const origin = 'http://b-test.example.com';
     const server = new S3rver({
       configureBuckets: [buckets[0]],
@@ -277,7 +278,7 @@ describe('CORS Policy Tests', function () {
     }
   });
 
-  it('exposes appropriate headers for a range request', async function () {
+  test('exposes appropriate headers for a range request', async function () {
     const origin = 'http://a-test.example.com';
     const server = new S3rver({
       configureBuckets: [buckets[0]],
@@ -318,7 +319,7 @@ describe('CORS Policy Tests', function () {
     }
   });
 
-  it('responds to OPTIONS requests with allowed headers', async function () {
+  test('responds to OPTIONS requests with allowed headers', async function () {
     const origin = 'http://foo.bar.com';
     const server = new S3rver({
       configureBuckets: [buckets[0]],
@@ -355,7 +356,7 @@ describe('CORS Policy Tests', function () {
     }
   });
 
-  it('responds to OPTIONS requests with a Forbidden response', async function () {
+  test('responds to OPTIONS requests with a Forbidden response', async function () {
     const origin = 'http://a-test.example.com';
     const server = new S3rver({
       configureBuckets: [buckets[0]],
@@ -391,7 +392,7 @@ describe('CORS Policy Tests', function () {
     expect(error.response.statusCode).to.equal(403);
   });
 
-  it('responds to OPTIONS requests with a Forbidden response when CORS is disabled', async function () {
+  test('responds to OPTIONS requests with a Forbidden response when CORS is disabled', async function () {
     const origin = 'http://foo.bar.com';
     const bucket = { name: 'foobar' };
     const server = new S3rver({
@@ -427,7 +428,7 @@ describe('CORS Policy Tests', function () {
     expect(error.response.statusCode).to.equal(403);
   });
 
-  it('responds correctly to OPTIONS requests that dont specify access-control-request-headers', async function () {
+  test('responds correctly to OPTIONS requests that dont specify access-control-request-headers', async function () {
     const origin = 'http://a-test.example.com';
     const server = new S3rver({
       configureBuckets: [buckets[0]],

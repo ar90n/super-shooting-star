@@ -1,5 +1,6 @@
 'use strict';
 
+import { describe, test, beforeEach } from '@jest/globals';
 import { createRequire } from 'node:module';
 import { expect } from 'chai';
 import fs from 'fs';
@@ -58,7 +59,7 @@ describe('Static Website Tests', function () {
     }));
   });
 
-  it('fails to read an object at the website endpoint from a bucket with no website configuration', async function () {
+  test('fails to read an object at the website endpoint from a bucket with no website configuration', async function () {
     await s3Client
       .putObject({
         Bucket: 'bucket-a',
@@ -83,7 +84,7 @@ describe('Static Website Tests', function () {
     expect(res.body).to.contain('Code: NoSuchWebsiteConfiguration');
   });
 
-  it('returns an index page at / path', async function () {
+  test('returns an index page at / path', async function () {
     const expectedBody = '<html><body>Hello</body></html>';
     await s3Client
       .putObject({
@@ -99,7 +100,7 @@ describe('Static Website Tests', function () {
     expect(res.body).to.equal(expectedBody);
   });
 
-  it('allows redirects for image requests', async function () {
+  test('allows redirects for image requests', async function () {
     let res;
     try {
       res = await request('website3/complex/image.png', {
@@ -117,7 +118,7 @@ describe('Static Website Tests', function () {
     );
   });
 
-  it('returns an index page at /page/ path', async function () {
+  test('returns an index page at /page/ path', async function () {
     const expectedBody = '<html><body>Hello</body></html>';
     await s3Client
       .putObject({
@@ -133,7 +134,7 @@ describe('Static Website Tests', function () {
     expect(res.body).to.equal(expectedBody);
   });
 
-  it('does not return an index page at /page/ path if an object is stored with a trailing /', async function () {
+  test('does not return an index page at /page/ path if an object is stored with a trailing /', async function () {
     const indexBody = '<html><body>Hello</body></html>';
     const expectedBody = '<html><body>Goodbye</body></html>';
     await s3Client
@@ -158,7 +159,7 @@ describe('Static Website Tests', function () {
     expect(res.body).to.equal(expectedBody);
   });
 
-  it('redirects with a 302 status at /page path', async function () {
+  test('redirects with a 302 status at /page path', async function () {
     const body = '<html><body>Hello</body></html>';
     await s3Client
       .putObject({
@@ -181,7 +182,7 @@ describe('Static Website Tests', function () {
     expect(res.headers).to.have.property('location', '/website0/page/');
   });
 
-  it('redirects with 302 status at /page path for subdomain-style bucket', async function () {
+  test('redirects with 302 status at /page path for subdomain-style bucket', async function () {
     const body = '<html><body>Hello</body></html>';
     await s3Client
       .putObject({
@@ -204,7 +205,7 @@ describe('Static Website Tests', function () {
     expect(res.headers).to.have.property('location', '/page/');
   });
 
-  it('returns a HTML 404 error page', async function () {
+  test('returns a HTML 404 error page', async function () {
     let res;
     try {
       res = await request('website0/page/not-exists', {
@@ -222,7 +223,7 @@ describe('Static Website Tests', function () {
     expect(res.body).to.contain.string('Key: page/not-exists');
   });
 
-  it('returns a HTML 404 error page for a missing index key', async function () {
+  test('returns a HTML 404 error page for a missing index key', async function () {
     let res;
     try {
       res = await request('website0/page/not-exists/', {
@@ -240,7 +241,7 @@ describe('Static Website Tests', function () {
     expect(res.body).to.contain.string('Key: page/not-exists/index.html');
   });
 
-  it('serves a custom error page if it exists', async function () {
+  test('serves a custom error page if it exists', async function () {
     const body = '<html><body>Oops!</body></html>';
     await s3Client
       .putObject({
@@ -266,7 +267,7 @@ describe('Static Website Tests', function () {
     expect(res.body).to.equal(body);
   });
 
-  it('returns a XML error document for SDK requests', async function () {
+  test('returns a XML error document for SDK requests', async function () {
     let error;
     try {
       await s3Client
@@ -283,7 +284,7 @@ describe('Static Website Tests', function () {
     expect(error.code).to.equal('NoSuchKey');
   });
 
-  it('stores an object with website-redirect-location metadata', async function () {
+  test('stores an object with website-redirect-location metadata', async function () {
     const redirectLocation = 'https://github.com/jamhall/s3rver';
     await s3Client
       .putObject({
@@ -302,7 +303,7 @@ describe('Static Website Tests', function () {
     expect(res).to.have.property('WebsiteRedirectLocation', redirectLocation);
   });
 
-  it('redirects for an object stored with a website-redirect-location', async function () {
+  test('redirects for an object stored with a website-redirect-location', async function () {
     const redirectLocation = 'https://github.com/jamhall/s3rver';
     await s3Client
       .putObject({
@@ -326,7 +327,7 @@ describe('Static Website Tests', function () {
     expect(res.headers).to.have.property('location', redirectLocation);
   });
 
-  it('redirects for a custom error page stored with a website-redirect-location', async function () {
+  test('redirects for a custom error page stored with a website-redirect-location', async function () {
     const redirectLocation = 'https://github.com/jamhall/s3rver';
     const body = '<html><body>Hello</body></html>';
     await s3Client
@@ -352,7 +353,7 @@ describe('Static Website Tests', function () {
   });
 
   describe('Routing rules', () => {
-    it('evaluates a single simple routing rule', async function () {
+    test('evaluates a single simple routing rule', async function () {
       let res;
       try {
         res = await request(`website2/test/key/`, {
@@ -370,7 +371,7 @@ describe('Static Website Tests', function () {
       );
     });
 
-    it('does not evaluate routing rules for an index page', async function () {
+    test('does not evaluate routing rules for an index page', async function () {
       const expectedBody = '<html><body>Hello</body></html>';
       await s3Client
         .putObject({
@@ -386,7 +387,7 @@ describe('Static Website Tests', function () {
       expect(res.body).to.equal(expectedBody);
     });
 
-    it('does not evaluate routing rules for an index page redirect', async function () {
+    test('does not evaluate routing rules for an index page redirect', async function () {
       const expectedBody = '<html><body>Hello</body></html>';
       await s3Client
         .putObject({
@@ -412,7 +413,7 @@ describe('Static Website Tests', function () {
       );
     });
 
-    it('evaluates a multi-rule config', async function () {
+    test('evaluates a multi-rule config', async function () {
       let res;
       try {
         res = await request(`website3/simple/key`, {
@@ -430,7 +431,7 @@ describe('Static Website Tests', function () {
       );
     });
 
-    it('evaluates a complex rule', async function () {
+    test('evaluates a complex rule', async function () {
       let res;
       try {
         res = await request(`website3/complex/key`, {

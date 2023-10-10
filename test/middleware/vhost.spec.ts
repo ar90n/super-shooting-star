@@ -1,5 +1,6 @@
 'use strict';
 
+import { describe, test, beforeEach } from '@jest/globals';
 import { createRequire } from 'node:module';
 import { expect } from 'chai';
 import { zip } from 'lodash-es';
@@ -16,7 +17,7 @@ const request = require('request-promise-native').defaults({
 describe('Virtual Host resolution', () => {
   const buckets = [{ name: 'bucket-a' }, { name: 'bucket-b' }];
 
-  it('lists objects with subdomain-domain style bucket access', async function () {
+  test('lists objects with subdomain-domain style bucket access', async function () {
     const { s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     });
@@ -26,7 +27,7 @@ describe('Virtual Host resolution', () => {
     expect(res.body).to.include(`<Name>bucket-a</Name>`);
   });
 
-  it('lists objects with a vhost-style bucket access', async function () {
+  test('lists objects with a vhost-style bucket access', async function () {
     const { s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     });
@@ -36,7 +37,7 @@ describe('Virtual Host resolution', () => {
     expect(res.body).to.include(`<Name>bucket-a</Name>`);
   });
 
-  it('lists buckets when vhost-style bucket access is disabled', async function () {
+  test('lists buckets when vhost-style bucket access is disabled', async function () {
     const { s3Client } = await createServerAndClient({
       vhostBuckets: false,
       configureBuckets: buckets,
@@ -55,7 +56,7 @@ describe('Virtual Host resolution', () => {
     }
   });
 
-  it('lists buckets at a custom service endpoint', async function () {
+  test('lists buckets at a custom service endpoint', async function () {
     const { s3Client } = await createServerAndClient({
       serviceEndpoint: 'example.com',
       configureBuckets: buckets,
@@ -74,7 +75,7 @@ describe('Virtual Host resolution', () => {
     }
   });
 
-  it('lists buckets at the OS hostname', async function () {
+  test('lists buckets at the OS hostname', async function () {
     const { s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     });
@@ -92,7 +93,7 @@ describe('Virtual Host resolution', () => {
     }
   });
 
-  it('lists objects in a bucket at a custom service endpoint', async function () {
+  test('lists objects in a bucket at a custom service endpoint', async function () {
     const { s3Client } = await createServerAndClient({
       serviceEndpoint: 'example.com',
       configureBuckets: buckets,
