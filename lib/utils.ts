@@ -121,7 +121,7 @@ export const parseISO8601String = function (dateString) {
  */
 export const parseDate = function (dateString) {
   let date = new Date(dateString);
-  if (isNaN(date)) {
+  if (isNaN(date as any)) {
     date = parseISO8601String(dateString);
   }
   return date;
@@ -143,7 +143,7 @@ export const toISO8601String = function (date) {
  */
 export const xmlBodyParser = async function xmlBodyParser(ctx) {
   const { req } = ctx;
-  const xmlString = await new Promise((resolve, reject) => {
+  const xmlString: any = await new Promise((resolve, reject) => {
     let payload = '';
     req.on('data', (data) => (payload += data.toString('utf8')));
     req.on('end', () => resolve(payload));
@@ -156,10 +156,10 @@ export const xmlBodyParser = async function xmlBodyParser(ctx) {
         'our published schema.',
     );
   }
-  const xmlParser = new XMLParser();
-  ctx.request.body = xmlParser.parse(xmlString, {
-    tagValueProcessor: (a) => he.decode(a),
+  const xmlParser = new XMLParser({
+    //    tagValueProcessor: (a) => he.decode(a),
   });
+  ctx.request.body = xmlParser.parse(xmlString);
 };
 
 /**
