@@ -11,8 +11,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { expect } from 'chai';
 import fs from 'fs';
 
-import S3rver from '../../lib/s3rver';
-import { createClient, resolveFixturePath } from '../helpers';
+import S3rver from '../../lib/s3rver.js';
+import { createClient, resolveFixturePath } from '../helpers.ts';
 
 describe('CORS Policy Tests', function () {
   const buckets = [

@@ -43,7 +43,7 @@ import {
   parseXml,
   StreamingRequestSigner,
   resolveFixturePath,
-} from '../helpers';
+} from '../helpers.ts';
 
 function streamToString(stream): Promise<string> {
   return new Promise((resolve, reject) => {
