@@ -7,11 +7,7 @@ import { zip } from 'lodash-es';
 import moment from 'moment';
 import os from 'os';
 
-import {
-  createServerAndClient2,
-  parseXml,
-  getEndpointHref,
-} from '../helpers.ts';
+import { createServerAndClient2, parseXml, getEndpointHref } from '../helpers';
 
 describe('Virtual Host resolution', () => {
   const buckets = [{ name: 'bucket-a' }, { name: 'bucket-b' }];

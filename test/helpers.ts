@@ -14,7 +14,7 @@ import { times } from 'lodash-es';
 import os from 'os';
 import path from 'path';
 import pMap from 'p-map';
-import S3rver from '../lib/s3rver.js';
+import S3rver from '..';
 const { RequestSigner } = pkg;
 
 const tmpDir = path.join(os.tmpdir(), 's3rver_test');

@@ -13,7 +13,7 @@ import {
   createServerAndClient2,
   getEndpointHref,
   resolveFixturePath,
-} from '../helpers.ts';
+} from '../helpers';
 
 describe('Static Website Tests', function () {
   let s3Client: S3Client;

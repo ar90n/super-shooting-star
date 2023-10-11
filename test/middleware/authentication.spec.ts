@@ -5,13 +5,13 @@ import { expect } from 'chai';
 import express from 'express';
 import fs from 'fs';
 import { URL } from 'url';
-import { toISO8601String } from '../../lib/utils.ts';
+import { toISO8601String } from '../../lib/utils';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   createServerAndClient2,
   getEndpointHref,
   resolveFixturePath,
-} from '../helpers.ts';
+} from '../helpers';
 import {
   S3Client,
   PutObjectCommand,
