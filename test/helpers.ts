@@ -136,8 +136,8 @@ export const getEndpointHref = async (s3Client: S3Client) => {
 };
 
 export const resolveFixturePath = (fixtureName: string): string => {
-  return resolve(`./fixtures/${fixtureName}`, import.meta.url).replace(
-    'file://',
-    '',
-  );
+  let resolved = resolve(`./fixtures/${fixtureName}`, import.meta.url);
+  resolved = resolved.replace('file://', ''); // remove protocol
+  resolved = resolved.replace(/^\/([A-Z]):/, ''); // remove driver letter
+  return resolved;
 };
