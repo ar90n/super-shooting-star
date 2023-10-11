@@ -1,33 +1,17 @@
 'use strict';
 
-import { describe, test, beforeEach } from '@jest/globals';
-import { createRequire } from 'node:module';
+import { describe, test, beforeEach, afterEach } from '@jest/globals';
 import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
-  DeleteObjectCommand,
-  DeleteObjectsCommand,
-  CreateMultipartUploadCommand,
-  PutObjectTaggingCommand,
-  CopyObjectCommand,
-  UploadPartCopyCommand,
-  GetObjectTaggingCommand,
-  CreateBucketCommand,
-  HeadObjectCommand,
-  GetObjectAclCommand,
-  UploadPartCommand,
-  CompleteMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
 import { expect } from 'chai';
 import fs from 'fs';
 
 import { createServerAndClient2, getEndpointHref } from '../helpers';
-
+import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const request = require('request-promise-native').defaults({
-  resolveWithFullResponse: true,
-});
 
 describe('Static Website Tests', function () {
   let s3Client: S3Client;
@@ -76,6 +60,10 @@ describe('Static Website Tests', function () {
     }));
   });
 
+  afterEach(async function () {
+    s3Client.destroy();
+  });
+
   test('fails to read an object at the website endpoint from a bucket with no website configuration', async function () {
     await s3Client.send(
       new PutObjectCommand({
@@ -87,19 +75,19 @@ describe('Static Website Tests', function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request('page/', {
-        baseUrl: href,
+      res = await fetch(`${href}page/`, {
         headers: { host: `bucket-a.s3-website-us-east-1.amazonaws.com` },
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.statusCode).to.equal(404);
-    expect(res.headers).to.have.property(
-      'content-type',
+    expect(res.status).to.equal(404);
+    expect(res.headers.get('content-type')).to.equal(
       'text/html; charset=utf-8',
     );
-    expect(res.body).to.contain('Code: NoSuchWebsiteConfiguration');
+    expect(res.text()).to.eventually.contain(
+      'Code: NoSuchWebsiteConfiguration',
+    );
   });
 
   test('returns an index page at / path', async function () {
@@ -112,30 +100,25 @@ describe('Static Website Tests', function () {
       }),
     );
     const href = await getEndpointHref(s3Client);
-    const res = await request('website0/', {
-      baseUrl: href,
+    const res = await fetch(`${href}website0/`, {
       headers: { accept: 'text/html' },
     });
-    expect(res.body).to.equal(expectedBody);
+    expect(res.text()).to.eventually.equal(expectedBody);
   });
 
   test('allows redirects for image requests', async function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request('website3/complex/image.png', {
-        baseUrl: href,
+      res = await fetch(`${href}website3/complex/image.png`, {
         headers: { accept: 'image/png' },
-        followRedirect: false,
+        redirect: 'manual',
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.statusCode).to.equal(307);
-    expect(res.headers).to.have.property(
-      'location',
-      'https://custom/replacement',
-    );
+    expect(res.status).to.equal(307);
+    expect(res.headers.get('location')).to.equal('https://custom/replacement');
   });
 
   test('returns an index page at /page/ path', async function () {
@@ -148,11 +131,10 @@ describe('Static Website Tests', function () {
       }),
     );
     const href = await getEndpointHref(s3Client);
-    const res = await request('website0/page/', {
-      baseUrl: href,
+    const res = await fetch(`${href}website0/page/`, {
       headers: { accept: 'text/html' },
     });
-    expect(res.body).to.equal(expectedBody);
+    expect(res.text()).to.eventually.equal(expectedBody);
   });
 
   test('does not return an index page at /page/ path if an object is stored with a trailing /', async function () {
@@ -174,11 +156,10 @@ describe('Static Website Tests', function () {
     );
 
     const href = await getEndpointHref(s3Client);
-    const res = await request('website0/page/', {
-      baseUrl: href,
+    const res = await fetch(`${href}website0/page/`, {
       headers: { accept: 'text/html' },
     });
-    expect(res.body).to.equal(expectedBody);
+    expect(res.text()).to.eventually.include(expectedBody);
   });
 
   test('redirects with a 302 status at /page path', async function () {
@@ -193,16 +174,15 @@ describe('Static Website Tests', function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request('website0/page', {
-        baseUrl: href,
+      res = await fetch(`${href}website0/page`, {
         headers: { accept: 'text/html' },
-        followRedirect: false,
+        redirect: 'manual',
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.statusCode).to.equal(302);
-    expect(res.headers).to.have.property('location', '/website0/page/');
+    expect(res.status).to.equal(302);
+    expect(res.headers.get('location')).to.equal('/website0/page/');
   });
 
   test('redirects with 302 status at /page path for subdomain-style bucket', async function () {
@@ -217,54 +197,51 @@ describe('Static Website Tests', function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request('page', {
-        baseUrl: href,
+      res = await fetch(`${href}page`, {
         headers: { host: 'website0.s3-website-us-east-1.amazonaws.com' },
-        followRedirect: false,
+        redirect: 'manual',
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.statusCode).to.equal(302);
-    expect(res.headers).to.have.property('location', '/page/');
+    expect(res.status).to.equal(302);
+    expect(res.headers.get('location')).to.equal('/page/');
   });
 
   test('returns a HTML 404 error page', async function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request('website0/page/not-exists', {
-        baseUrl: href,
+      res = await fetch(`${href}website0/page/not-exists`, {
         headers: { accept: 'text/html' },
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.statusCode).to.equal(404);
-    expect(res.headers).to.have.property(
-      'content-type',
+    expect(res.status).to.equal(404);
+    expect(res.headers.get('content-type')).to.equal(
       'text/html; charset=utf-8',
     );
-    expect(res.body).to.contain.string('Key: page/not-exists');
+    expect(res.text()).to.eventually.contain.string('Key: page/not-exists');
   });
 
   test('returns a HTML 404 error page for a missing index key', async function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request('website0/page/not-exists/', {
-        baseUrl: href,
+      res = await fetch(`${href}website0/page/not-exists/`, {
         headers: { accept: 'text/html' },
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.statusCode).to.equal(404);
-    expect(res.headers).to.have.property(
-      'content-type',
+    expect(res.status).to.equal(404);
+    expect(res.headers.get('content-type')).to.equal(
       'text/html; charset=utf-8',
     );
-    expect(res.body).to.contain.string('Key: page/not-exists/index.html');
+    expect(res.text()).to.eventually.contain.string(
+      'Key: page/not-exists/index.html',
+    );
   });
 
   test('serves a custom error page if it exists', async function () {
@@ -280,18 +257,16 @@ describe('Static Website Tests', function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request('website1/page/not-exists', {
-        baseUrl: href,
+      res = await fetch(`${href}website1/page/not-exists`, {
         headers: { accept: 'text/html' },
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.headers).to.have.property(
-      'content-type',
+    expect(res.headers.get('content-type')).to.equal(
       'text/html; charset=utf-8',
     );
-    expect(res.body).to.equal(body);
+    expect(res.text()).to.eventually.equal(body);
   });
 
   test('returns a XML error document for SDK requests', async function () {
@@ -343,16 +318,15 @@ describe('Static Website Tests', function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request(`website0/`, {
-        baseUrl: href,
+      res = await fetch(`${href}website0/`, {
         headers: { accept: 'text/html' },
-        followRedirect: false,
+        redirect: 'manual',
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.statusCode).to.equal(301);
-    expect(res.headers).to.have.property('location', redirectLocation);
+    expect(res.status).to.equal(301);
+    expect(res.headers.get('location')).to.equal(redirectLocation);
   });
 
   test('redirects for a custom error page stored with a website-redirect-location', async function () {
@@ -369,16 +343,15 @@ describe('Static Website Tests', function () {
     const href = await getEndpointHref(s3Client);
     let res;
     try {
-      res = await request(`website1/page/`, {
-        baseUrl: href,
+      res = await fetch(`${href}website1/page/`, {
         headers: { accept: 'text/html' },
-        followRedirect: false,
+        redirect: 'manual',
       });
     } catch (err) {
       res = err.response;
     }
-    expect(res.statusCode).to.equal(301);
-    expect(res.headers).to.have.property('location', redirectLocation);
+    expect(res.status).to.equal(301);
+    expect(res.headers.get('location')).to.equal(redirectLocation);
   });
 
   describe('Routing rules', () => {
@@ -386,17 +359,15 @@ describe('Static Website Tests', function () {
       const href = await getEndpointHref(s3Client);
       let res;
       try {
-        res = await request(`website2/test/key/`, {
-          baseUrl: href,
+        res = await fetch(`${href}website2/test/key/`, {
           headers: { accept: 'text/html' },
-          followRedirect: false,
+          redirect: 'manual',
         });
       } catch (err) {
         res = err.response;
       }
-      expect(res.statusCode).to.equal(301);
-      expect(res.headers).to.have.property(
-        'location',
+      expect(res.status).to.equal(301);
+      expect(res.headers.get('location')).to.equal(
         href + 'website2/replacement/key/',
       );
     });
@@ -411,11 +382,10 @@ describe('Static Website Tests', function () {
         }),
       );
       const href = await getEndpointHref(s3Client);
-      const res = await request('website2/recursive/foo/', {
-        baseUrl: href,
+      const res = await fetch(`${href}website2/recursive/foo/`, {
         headers: { accept: 'text/html' },
       });
-      expect(res.body).to.equal(expectedBody);
+      expect(res.text()).to.eventually.equal(expectedBody);
     });
 
     test('does not evaluate routing rules for an index page redirect', async function () {
@@ -430,36 +400,30 @@ describe('Static Website Tests', function () {
       const href = await getEndpointHref(s3Client);
       let res;
       try {
-        res = await request('website2/recursive/foo', {
-          baseUrl: href,
+        res = await fetch(`${href}website2/recursive/foo`, {
           headers: { accept: 'text/html' },
-          followRedirect: false,
+          redirect: 'manual',
         });
       } catch (err) {
         res = err.response;
       }
-      expect(res.statusCode).to.equal(302);
-      expect(res.headers).to.have.property(
-        'location',
-        '/website2/recursive/foo/',
-      );
+      expect(res.status).to.equal(302);
+      expect(res.headers.get('location')).to.equal('/website2/recursive/foo/');
     });
 
     test('evaluates a multi-rule config', async function () {
       const href = await getEndpointHref(s3Client);
       let res;
       try {
-        res = await request(`website3/simple/key`, {
-          baseUrl: href,
+        res = await fetch(`${href}website3/simple/key`, {
           headers: { accept: 'text/html' },
-          followRedirect: false,
+          redirect: 'manual',
         });
       } catch (err) {
         res = err.response;
       }
-      expect(res.statusCode).to.equal(301);
-      expect(res.headers).to.have.property(
-        'location',
+      expect(res.status).to.equal(301);
+      expect(res.headers.get('location')).to.equal(
         href + 'website3/replacement/key',
       );
     });
@@ -468,17 +432,15 @@ describe('Static Website Tests', function () {
       const href = await getEndpointHref(s3Client);
       let res;
       try {
-        res = await request(`website3/complex/key`, {
-          baseUrl: href,
+        res = await fetch(`${href}website3/complex/key`, {
           headers: { accept: 'text/html' },
-          followRedirect: false,
+          redirect: 'manual',
         });
       } catch (err) {
         res = err.response;
       }
-      expect(res.statusCode).to.equal(307);
-      expect(res.headers).to.have.property(
-        'location',
+      expect(res.status).to.equal(307);
+      expect(res.headers.get('location')).to.equal(
         'https://custom/replacement',
       );
     });

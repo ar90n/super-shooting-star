@@ -29,7 +29,6 @@ import {
 import { EventEmitter } from 'events';
 import { once } from 'events';
 import express from 'express';
-import FormData from 'form-data';
 import fs from 'fs';
 import http from 'http';
 import { find, times } from 'lodash-es';
@@ -47,10 +46,6 @@ import {
 } from '../helpers';
 
 const require = createRequire(import.meta.url);
-
-const request = require('request-promise-native').defaults({
-  resolveWithFullResponse: true,
-});
 
 function streamToString(stream): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -219,13 +214,13 @@ describe('Operations on Objects', () => {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: { range: 'bytes=0-99' },
       });
-      expect(res.statusCode).to.equal(206);
-      expect(res.headers).to.have.property('content-range');
-      expect(res.headers).to.have.property('accept-ranges');
-      expect(res.headers).to.have.property('content-length', '100');
+      expect(res.status).to.equal(206);
+      expect(res.headers.get('content-range')).to.exist;
+      expect(res.headers.get('accept-ranges')).to.exist;
+      expect(res.headers.get('content-length')).to.equal('100');
     });
 
     test('gets a response without range headers when no range is specified in the request', async function () {
@@ -245,13 +240,13 @@ describe('Operations on Objects', () => {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: {},
       });
-      expect(res.statusCode).to.equal(200);
-      expect(res.headers).to.not.have.property('content-range');
-      expect(res.headers).to.have.property('accept-ranges');
-      expect(res.headers).to.have.property('content-length', '52359');
+      expect(res.status).to.equal(200);
+      expect(res.headers.get('content-range')).to.not.exist;
+      expect(res.headers.get('accept-ranges')).to.exist;
+      expect(res.headers.get('content-length')).to.equal('52359');
     });
 
     test('gets a response with range headers when the requested range starts on byte 0 and no end', async function () {
@@ -271,13 +266,13 @@ describe('Operations on Objects', () => {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: { range: 'bytes=0-' },
       });
-      expect(res.statusCode).to.equal(206);
-      expect(res.headers).to.have.property('content-range');
-      expect(res.headers).to.have.property('accept-ranges');
-      expect(res.headers).to.have.property('content-length', '52359');
+      expect(res.status).to.equal(206);
+      expect(res.headers.get('content-range')).to.exist;
+      expect(res.headers.get('accept-ranges')).to.exist;
+      expect(res.headers.get('content-length')).to.equal('52359');
     });
 
     test('returns 416 error for out of bounds range requests', async function () {
@@ -299,16 +294,11 @@ describe('Operations on Objects', () => {
         }),
       );
 
-      let error;
-      try {
-        await request(url, {
-          headers: { range: `bytes=${filesize + 100}-${filesize + 200}` },
-        });
-      } catch (err) {
-        error = err;
-      }
-      expect(error).to.exist;
-      expect(error.response.statusCode).to.equal(416);
+      const res = await fetch(url, {
+        headers: { range: `bytes=${filesize + 100}-${filesize + 200}` },
+      });
+      expect(res).to.exist;
+      expect(res.status).to.equal(416);
     });
 
     test('returns actual length of data for partial out of bounds range requests', async function () {
@@ -329,14 +319,13 @@ describe('Operations on Objects', () => {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: { range: 'bytes=0-100000' },
       });
-      expect(res.statusCode).to.equal(206);
-      expect(res.headers).to.have.property('content-range');
-      expect(res.headers).to.have.property('accept-ranges');
-      expect(res.headers).to.have.property(
-        'content-length',
+      expect(res.status).to.equal(206);
+      expect(res.headers.get('content-range')).to.exist;
+      expect(res.headers.get('accept-ranges')).to.exist;
+      expect(res.headers.get('content-length')).to.deep.equal(
         filesize.toString(),
       );
     });
@@ -440,14 +429,13 @@ describe('Operations on Objects', () => {
     test('stores a text object for a multipart/form-data request', async function () {
       const form = new FormData();
       form.append('key', 'text');
-      form.append('file', 'Hello!', 'post_file.txt');
+      form.append('file', new Blob(['Hello!']), 'post_file.txt');
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('bucket-a', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
-      expect(res.statusCode).to.equal(204);
+      expect(res.status).to.equal(204);
       const object = await s3Client.send(
         new GetObjectCommand({ Bucket: 'bucket-a', Key: 'text' }),
       );
@@ -460,8 +448,8 @@ describe('Operations on Objects', () => {
       const href = await getEndpointHref(s3Client);
       let res;
       try {
-        res = await request.post('bucket-a', {
-          baseUrl: href,
+        res = await fetch(`${href}bucket-a`, {
+          method: 'POST',
           body: new URLSearchParams({
             key: 'text',
             file: 'Hello!',
@@ -470,8 +458,8 @@ describe('Operations on Objects', () => {
       } catch (err) {
         res = err.response;
       }
-      expect(res.statusCode).to.equal(412);
-      expect(res.body).to.deep.contain(
+      expect(res.status).to.equal(412);
+      expect(res.text()).to.eventually.contain(
         '<Condition>Bucket POST must be of the enclosure-type multipart/form-data</Condition>',
       );
     });
@@ -481,12 +469,11 @@ describe('Operations on Objects', () => {
       form.append('key', 'text');
       form.append('file', 'Hello!');
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('bucket-a', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
-      expect(res.statusCode).to.equal(204);
+      expect(res.status).to.equal(204);
       const object = await s3Client.send(
         new GetObjectCommand({ Bucket: 'bucket-a', Key: 'text' }),
       );
@@ -499,14 +486,13 @@ describe('Operations on Objects', () => {
       const form = new FormData();
       form.append('key', 'text');
       form.append('Content-Type', 'text/plain');
-      form.append('file', 'Hello!', 'post_file.txt');
+      form.append('file', new Blob(['Hello!']), 'post_file.txt');
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('bucket-a', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
-      expect(res.statusCode).to.equal(204);
+      expect(res.status).to.equal(204);
       const object = await s3Client.send(
         new GetObjectCommand({ Bucket: 'bucket-a', Key: 'text' }),
       );
@@ -516,65 +502,71 @@ describe('Operations on Objects', () => {
     });
 
     test('returns the location of the stored object in a header', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = fs.readFileSync(require.resolve('../fixtures/image0.jpg'));
       const form = new FormData();
       form.append('key', 'image');
-      form.append('file', fs.createReadStream(file));
+      form.append(
+        'file',
+        new Blob([file], { type: 'image/jpeg' }),
+        'image0.jpg',
+      );
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('bucket-a', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
-      expect(res.statusCode).to.equal(204);
-      expect(res.headers).to.have.property(
-        'location',
+      expect(res.status).to.equal(204);
+      expect(res.headers.get('location')).to.deep.equal(
         new URL('/bucket-a/image', href).href,
       );
-      const objectRes = await request(res.headers.location, {
-        encoding: null,
-      });
-      expect(objectRes.body).to.deep.equal(fs.readFileSync(file));
+      const objectRes = await fetch(res.headers.get('location'), {});
+      const arrayBuffer = await objectRes.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      expect(buffer).to.deep.equal(file);
     });
 
     test('returns the location of the stored object in a header with vhost URL', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = fs.readFileSync(require.resolve('../fixtures/image0.jpg'));
       const form = new FormData();
       form.append('key', 'image');
-      form.append('file', fs.createReadStream(file));
+      form.append(
+        'file',
+        new Blob([file], { type: 'image/jpeg' }),
+        'image0.jpg',
+      );
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('', {
-        baseUrl: href,
+      const res = await fetch(`${href}`, {
+        method: 'POST',
         body: form,
         headers: {
           host: 'bucket-a',
-          ...form.getHeaders(),
         },
       });
-      expect(res.statusCode).to.equal(204);
-      expect(res.headers).to.have.property(
-        'location',
+      expect(res.status).to.equal(204);
+      expect(res.headers.get('location')).to.deep.equal(
         new URL('/image', `http://bucket-a`).href,
       );
     });
 
     test('returns the location of the stored object in a header with subdomain URL', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = fs.readFileSync(require.resolve('../fixtures/image0.jpg'));
       const form = new FormData();
       form.append('key', 'image');
-      form.append('file', fs.createReadStream(file));
+      form.append(
+        'file',
+        new Blob([file], { type: 'image/jpeg' }),
+        'image0.jpg',
+      );
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('', {
-        baseUrl: href,
+      const res = await fetch(`${href}`, {
+        method: 'POST',
         body: form,
         headers: {
           host: 'bucket-a.s3.amazonaws.com',
-          ...form.getHeaders(),
         },
       });
-      expect(res.statusCode).to.equal(204);
-      expect(res.headers).to.have.property(
-        'location',
+      expect(res.status).to.equal(204);
+      expect(res.headers.get('location')).to.deep.equal(
         new URL('/image', 'http://bucket-a.s3.amazonaws.com').href,
       );
     });
@@ -585,14 +577,13 @@ describe('Operations on Objects', () => {
       form.append('success_action_status', '200');
       form.append('file', 'Hello!');
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('bucket-a', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
-      expect(res.statusCode).to.equal(200);
+      expect(res.status).to.equal(200);
       expect(res.headers).not.to.have.property('content-type');
-      expect(res.body).to.equal('');
+      expect(res.text()).to.eventually.equal('');
     });
 
     test('returns a 201 status code with XML response body', async function () {
@@ -601,15 +592,15 @@ describe('Operations on Objects', () => {
       form.append('success_action_status', '201');
       form.append('file', 'Hello!');
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('bucket-a', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
-      expect(res.statusCode).to.equal(201);
-      expect(res.headers).to.have.property('content-type', 'application/xml');
-      expect(res.body).to.contain('<PostResponse>');
-      expect(res.body).to.contain('<Bucket>bucket-a</Bucket><Key>text</Key>');
+      expect(res.status).to.equal(201);
+      expect(res.headers.get('content-type')).to.equal('application/xml');
+      const text = await res.text();
+      expect(text).to.contain('<PostResponse>');
+      expect(text).to.contain('<Bucket>bucket-a</Bucket><Key>text</Key>');
     });
 
     test('returns a 204 status code when an invalid status is specified', async function () {
@@ -618,12 +609,11 @@ describe('Operations on Objects', () => {
       form.append('success_action_status', '301');
       form.append('file', 'Hello!');
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('bucket-a', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
-      expect(res.statusCode).to.equal(204);
+      expect(res.status).to.equal(204);
     });
 
     test('redirects a custom location with search parameters', async function () {
@@ -633,18 +623,13 @@ describe('Operations on Objects', () => {
       form.append('success_action_redirect', successRedirect.href);
       form.append('file', 'Hello!');
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await request.post('bucket-a', {
-          baseUrl: href,
-          body: form,
-          headers: form.getHeaders(),
-        });
-      } catch (err) {
-        res = err.response;
-      }
-      expect(res.statusCode).to.equal(303);
-      const location = new URL(res.headers.location);
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
+        body: form,
+        redirect: 'manual',
+      });
+      expect(res.status).to.equal(303);
+      const location = new URL(res.headers.get('location'));
       expect(location.host).to.equal(successRedirect.host);
       expect(location.pathname).to.equal(successRedirect.pathname);
       expect(new Map(location.searchParams)).to.contain.key('bar');
@@ -662,18 +647,13 @@ describe('Operations on Objects', () => {
       form.append('redirect', successRedirect.href);
       form.append('file', 'Hello!');
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await request.post('bucket-a', {
-          baseUrl: href,
-          body: form,
-          headers: form.getHeaders(),
-        });
-      } catch (err) {
-        res = err.response;
-      }
-      expect(res.statusCode).to.equal(303);
-      const location = new URL(res.headers.location);
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
+        body: form,
+        redirect: 'manual',
+      });
+      expect(res.status).to.equal(303);
+      const location = new URL(res.headers.get('location'));
       expect(location.host).to.equal(successRedirect.host);
       expect(location.pathname).to.equal(successRedirect.pathname);
     });
@@ -686,18 +666,13 @@ describe('Operations on Objects', () => {
       form.append('redirect', 'http://ignore-me.local');
       form.append('file', 'Hello!');
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await request.post('bucket-a', {
-          baseUrl: href,
-          body: form,
-          headers: form.getHeaders(),
-        });
-      } catch (err) {
-        res = err.response;
-      }
-      expect(res.statusCode).to.equal(303);
-      const location = new URL(res.headers.location);
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
+        body: form,
+        redirect: 'manual',
+      });
+      expect(res.status).to.equal(303);
+      const location = new URL(res.headers.get('location'));
       expect(location.host).to.equal(successRedirect.host);
       expect(location.pathname).to.equal(successRedirect.pathname);
     });
@@ -710,17 +685,12 @@ describe('Operations on Objects', () => {
       form.append('success_action_status', '200');
       form.append('file', 'Hello!');
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await request.post('bucket-a', {
-          baseUrl: href,
-          body: form,
-          headers: form.getHeaders(),
-        });
-      } catch (err) {
-        res = err.response;
-      }
-      expect(res.statusCode).to.equal(303);
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
+        body: form,
+        redirect: 'manual',
+      });
+      expect(res.status).to.equal(303);
     });
 
     test('ignores fields specified after the file field', async function () {
@@ -730,19 +700,13 @@ describe('Operations on Objects', () => {
       form.append('Content-Type', 'text/plain');
       form.append('success_action_status', '200');
       const href = await getEndpointHref(s3Client);
-      const res = await request.post('bucket-a', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
-      const objectRes = await request(res.headers.location, {
-        encoding: null,
-      });
-      expect(res.statusCode).to.equal(204);
-      expect(objectRes.headers).to.not.have.property(
-        'content-type',
-        'text/plain',
-      );
+      const objectRes = await fetch(res.headers.get('location'));
+      expect(res.status).to.equal(204);
+      expect(objectRes.headers.get('content-type')).to.not.equal('text/plain');
     });
 
     test('rejects requests with no key field', async function () {
@@ -751,16 +715,15 @@ describe('Operations on Objects', () => {
       const href = await getEndpointHref(s3Client);
       let res;
       try {
-        res = await request.post('bucket-a', {
-          baseUrl: href,
+        res = await fetch(`${href}bucket-a`, {
+          method: 'POST',
           body: form,
-          headers: form.getHeaders(),
         });
       } catch (err) {
         res = err.response;
       }
-      expect(res.statusCode).to.equal(400);
-      expect(res.body).to.contain(
+      expect(res.status).to.equal(400);
+      expect(res.text()).to.eventually.contain(
         '<ArgumentName>key</ArgumentName><ArgumentValue></ArgumentValue>',
       );
     });
@@ -772,16 +735,15 @@ describe('Operations on Objects', () => {
       const href = await getEndpointHref(s3Client);
       let res;
       try {
-        res = await request.post('bucket-a', {
-          baseUrl: href,
+        res = await fetch(`${href}bucket-a`, {
+          method: 'POST',
           body: form,
-          headers: form.getHeaders(),
         });
       } catch (err) {
         res = err.response;
       }
-      expect(res.statusCode).to.equal(400);
-      expect(res.body).to.contain(
+      expect(res.status).to.equal(400);
+      expect(res.text()).to.eventually.contain(
         '<Message>User key must have a length greater than 0.</Message>',
       );
     });
@@ -790,18 +752,12 @@ describe('Operations on Objects', () => {
       const form = new FormData();
       form.append('key', 'text');
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await request.post('bucket-a', {
-          baseUrl: href,
-          body: form,
-          headers: form.getHeaders(),
-        });
-      } catch (err) {
-        res = err.response;
-      }
-      expect(res.statusCode).to.equal(400);
-      expect(res.body).to.contain(
+      const res = await fetch(`${href}bucket-a`, {
+        method: 'POST',
+        body: form,
+      });
+      expect(res.status).to.equal(400);
+      expect(res.text()).to.eventually.contain(
         '<ArgumentName>file</ArgumentName><ArgumentValue>0</ArgumentValue>',
       );
     });
@@ -908,11 +864,14 @@ describe('Operations on Objects', () => {
 
     test('stores a text object with no content type and retrieves it', async function () {
       const href = await getEndpointHref(s3Client);
-      const res = await request.put('bucket-a/text', {
-        baseUrl: href,
+      const res = await fetch(`${href}bucket-a/text`, {
+        method: 'PUT',
         body: 'Hello!',
+        headers: {
+          'Content-Type': '',
+        },
       });
-      expect(res.statusCode).to.equal(200);
+      expect(res.status).to.equal(200);
       const data = await s3Client.send(
         new GetObjectCommand({ Bucket: 'bucket-a', Key: 'text' }),
       );

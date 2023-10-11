@@ -18,9 +18,6 @@ import S3rver from '../../lib/s3rver';
 import { createClient } from '../helpers';
 
 const require = createRequire(import.meta.url);
-const request = require('request-promise-native').defaults({
-  resolveWithFullResponse: true,
-});
 
 describe('CORS Policy Tests', function () {
   const buckets = [
@@ -154,11 +151,11 @@ describe('CORS Policy Tests', function () {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: { origin },
       });
-      expect(res.statusCode).to.equal(200);
-      expect(res.headers).to.have.property('access-control-allow-origin', '*');
+      expect(res.status).to.equal(200);
+      expect(res.headers.get('access-control-allow-origin')).to.equal('*');
     } finally {
       s3Client.destroy();
       await server.close();
@@ -190,14 +187,11 @@ describe('CORS Policy Tests', function () {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: { origin },
       });
-      expect(res.statusCode).to.equal(200);
-      expect(res.headers).to.have.property(
-        'access-control-allow-origin',
-        origin,
-      );
+      expect(res.status).to.equal(200);
+      expect(res.headers.get('access-control-allow-origin')).to.equal(origin);
     } finally {
       s3Client.destroy();
       await server.close();
@@ -229,14 +223,11 @@ describe('CORS Policy Tests', function () {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: { origin },
       });
-      expect(res.statusCode).to.equal(200);
-      expect(res.headers).to.have.property(
-        'access-control-allow-origin',
-        origin,
-      );
+      expect(res.status).to.equal(200);
+      expect(res.headers.get('access-control-allow-origin')).to.equal(origin);
     } finally {
       s3Client.destroy();
       await server.close();
@@ -268,10 +259,10 @@ describe('CORS Policy Tests', function () {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: { origin },
       });
-      expect(res.statusCode).to.equal(200);
+      expect(res.status).to.equal(200);
       expect(res.headers).to.not.have.property('access-control-allow-origin');
     } finally {
       s3Client.destroy();
@@ -304,12 +295,11 @@ describe('CORS Policy Tests', function () {
           Key: 'image',
         }),
       );
-      const res = await request(url, {
+      const res = await fetch(url, {
         headers: { origin, range: 'bytes=0-99' },
       });
-      expect(res.statusCode).to.equal(206);
-      expect(res.headers).to.have.property(
-        'access-control-expose-headers',
+      expect(res.status).to.equal(206);
+      expect(res.headers.get('access-control-expose-headers')).to.equal(
         'Accept-Ranges, Content-Range',
       );
     } finally {
@@ -333,7 +323,7 @@ describe('CORS Policy Tests', function () {
       }),
     );
     try {
-      const res = await request(url, {
+      const res = await fetch(url, {
         method: 'OPTIONS',
         headers: {
           origin,
@@ -341,10 +331,9 @@ describe('CORS Policy Tests', function () {
           'Access-Control-Request-Headers': 'Range, Authorization',
         },
       });
-      expect(res.statusCode).to.equal(200);
-      expect(res.headers).to.have.property('access-control-allow-origin', '*');
-      expect(res.headers).to.have.property(
-        'access-control-allow-headers',
+      expect(res.status).to.equal(200);
+      expect(res.headers.get('access-control-allow-origin')).to.equal('*');
+      expect(res.headers.get('access-control-allow-headers')).to.equal(
         'range, authorization',
       );
     } finally {
@@ -367,9 +356,9 @@ describe('CORS Policy Tests', function () {
         Key: 'image',
       }),
     );
-    let error;
+    let res;
     try {
-      await request(url, {
+      res = await fetch(url, {
         method: 'OPTIONS',
         headers: {
           origin,
@@ -377,14 +366,11 @@ describe('CORS Policy Tests', function () {
           'Access-Control-Request-Headers': 'Range, Authorization',
         },
       });
-    } catch (err) {
-      error = err;
     } finally {
       s3Client.destroy();
       await server.close();
     }
-    expect(error).to.exist;
-    expect(error.response.statusCode).to.equal(403);
+    expect(res.status).to.equal(403);
   });
 
   test('responds to OPTIONS requests with a Forbidden response when CORS is disabled', async function () {
@@ -402,23 +388,20 @@ describe('CORS Policy Tests', function () {
         Key: 'image',
       }),
     );
-    let error;
+    let res;
     try {
-      await request(url, {
+      res = await fetch(url, {
         method: 'OPTIONS',
         headers: {
           origin,
           'Access-Control-Request-Method': 'GET',
         },
       });
-    } catch (err) {
-      error = err;
     } finally {
       s3Client.destroy();
       await server.close();
     }
-    expect(error).to.exist;
-    expect(error.response.statusCode).to.equal(403);
+    expect(res.status).to.equal(403);
   });
 
   test('responds correctly to OPTIONS requests that dont specify access-control-request-headers', async function () {
@@ -436,7 +419,7 @@ describe('CORS Policy Tests', function () {
       }),
     );
     try {
-      await request(url, {
+      await fetch(url, {
         method: 'OPTIONS',
         headers: {
           origin,

@@ -9,11 +9,6 @@ import os from 'os';
 
 import { createServerAndClient2, parseXml, getEndpointHref } from '../helpers';
 
-const require = createRequire(import.meta.url);
-const request = require('request-promise-native').defaults({
-  resolveWithFullResponse: true,
-});
-
 describe('Virtual Host resolution', () => {
   const buckets = [{ name: 'bucket-a' }, { name: 'bucket-b' }];
 
@@ -22,10 +17,11 @@ describe('Virtual Host resolution', () => {
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
-    const res = await request(href, {
+    const res = await fetch(href, {
       headers: { host: 'bucket-a.s3.amazonaws.com' },
     });
-    expect(res.body).to.include(`<Name>bucket-a</Name>`);
+    const text = await res.text();
+    expect(text).to.include(`<Name>bucket-a</Name>`);
   });
 
   test('lists objects with a vhost-style bucket access', async function () {
@@ -33,10 +29,11 @@ describe('Virtual Host resolution', () => {
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
-    const res = await request(href, {
+    const res = await fetch(href, {
       headers: { host: 'bucket-a' },
     });
-    expect(res.body).to.include(`<Name>bucket-a</Name>`);
+    const text = await res.text();
+    expect(text).to.include(`<Name>bucket-a</Name>`);
   });
 
   test('lists buckets when vhost-style bucket access is disabled', async function () {
@@ -45,10 +42,11 @@ describe('Virtual Host resolution', () => {
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
-    const res = await request(href, {
+    const res = await fetch(href, {
       headers: { host: 'bucket-a' },
     });
-    const parsedBody = parseXml(res.body);
+    const text = await res.text();
+    const parsedBody = parseXml(text);
     expect(parsedBody).to.haveOwnProperty('ListAllMyBucketsResult');
     const parsedBuckets = parsedBody.ListAllMyBucketsResult.Buckets.Bucket;
     expect(parsedBuckets).to.be.instanceOf(Array);
@@ -65,10 +63,11 @@ describe('Virtual Host resolution', () => {
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
-    const res = await request(href, {
+    const res = await fetch(href, {
       headers: { host: 's3.example.com' },
     });
-    const parsedBody = parseXml(res.body);
+    const text = await res.text();
+    const parsedBody = parseXml(text);
     expect(parsedBody).to.haveOwnProperty('ListAllMyBucketsResult');
     const parsedBuckets = parsedBody.ListAllMyBucketsResult.Buckets.Bucket;
     expect(parsedBuckets).to.be.instanceOf(Array);
@@ -84,10 +83,11 @@ describe('Virtual Host resolution', () => {
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
-    const res = await request(href, {
+    const res = await fetch(href, {
       headers: { host: os.hostname() },
     });
-    const parsedBody = parseXml(res.body);
+    const text = await res.text();
+    const parsedBody = parseXml(text);
     expect(parsedBody).to.haveOwnProperty('ListAllMyBucketsResult');
     const parsedBuckets = parsedBody.ListAllMyBucketsResult.Buckets.Bucket;
     expect(parsedBuckets).to.be.instanceOf(Array);
@@ -104,10 +104,11 @@ describe('Virtual Host resolution', () => {
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
-    const res = await request(href, {
+    const res = await fetch(href, {
       headers: { host: 'bucket-a.s3.example.com' },
     });
-    const parsedBody = parseXml(res.body);
+    const text = await res.text();
+    const parsedBody = parseXml(text);
     expect(parsedBody.ListBucketResult.Name).to.equal('bucket-a');
   });
 });

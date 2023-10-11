@@ -1,6 +1,5 @@
 'use strict';
 
-import { createRequire } from 'node:module';
 import { expect } from 'chai';
 import {
   S3Client,
@@ -13,7 +12,6 @@ import {
 } from '@aws-sdk/client-s3';
 import { once } from 'events';
 import express from 'express';
-import FormData from 'form-data';
 import fs from 'fs';
 import crypto from 'crypto';
 
@@ -23,11 +21,6 @@ import {
   getEndpointHref,
 } from './helpers';
 import S3rver from '../lib/s3rver';
-
-const require = createRequire(import.meta.url);
-const request = require('request-promise-native').defaults({
-  resolveWithFullResponse: true,
-});
 
 describe('S3rver', () => {
   describe('#run', () => {
@@ -222,10 +215,10 @@ describe('S3rver', () => {
       const form = new FormData();
       form.append('key', 'testPostKey');
       form.append('file', body);
-      await request.post('bucket-a', {
-        baseUrl: await getEndpointHref(s3Client),
+      const endpointHref = await getEndpointHref(s3Client);
+      await fetch(`${endpointHref}bucket-a`, {
+        method: 'POST',
         body: form,
-        headers: form.getHeaders(),
       });
 
       const [event] = await eventPromise;
