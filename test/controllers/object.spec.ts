@@ -1,7 +1,6 @@
 'use strict';
 
 import { describe, test, beforeEach, afterEach } from '@jest/globals';
-import { createRequire } from 'node:module';
 import { expect } from 'chai';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Upload } from '@aws-sdk/lib-storage';
@@ -43,9 +42,8 @@ import {
   md5,
   parseXml,
   StreamingRequestSigner,
+  resolveFixturePath,
 } from '../helpers';
-
-const require = createRequire(import.meta.url);
 
 function streamToString(stream): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -165,7 +163,7 @@ describe('Operations on Objects', () => {
     });
 
     test('gets an image from a bucket', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const data = await fs.promises.readFile(file);
       await s3Client.send(
         new PutObjectCommand({
@@ -198,7 +196,7 @@ describe('Operations on Objects', () => {
     });
 
     test('gets partial image from a bucket with a range request', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -224,7 +222,7 @@ describe('Operations on Objects', () => {
     });
 
     test('gets a response without range headers when no range is specified in the request', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -250,7 +248,7 @@ describe('Operations on Objects', () => {
     });
 
     test('gets a response with range headers when the requested range starts on byte 0 and no end', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -276,7 +274,7 @@ describe('Operations on Objects', () => {
     });
 
     test('returns 416 error for out of bounds range requests', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const { size: filesize } = fs.statSync(file);
       await s3Client.send(
         new PutObjectCommand({
@@ -302,7 +300,7 @@ describe('Operations on Objects', () => {
     });
 
     test('returns actual length of data for partial out of bounds range requests', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const { size: filesize } = fs.statSync(file);
       await s3Client.send(
         new PutObjectCommand({
@@ -350,7 +348,7 @@ describe('Operations on Objects', () => {
     });
 
     test('returns image metadata from a bucket in HEAD request', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const fileContent = await fs.promises.readFile(file);
       await s3Client.send(
         new PutObjectCommand({
@@ -502,7 +500,7 @@ describe('Operations on Objects', () => {
     });
 
     test('returns the location of the stored object in a header', async function () {
-      const file = fs.readFileSync(require.resolve('../fixtures/image0.jpg'));
+      const file = fs.readFileSync(resolveFixturePath('image0.jpg'));
       const form = new FormData();
       form.append('key', 'image');
       form.append(
@@ -526,7 +524,7 @@ describe('Operations on Objects', () => {
     });
 
     test('returns the location of the stored object in a header with vhost URL', async function () {
-      const file = fs.readFileSync(require.resolve('../fixtures/image0.jpg'));
+      const file = fs.readFileSync(resolveFixturePath('image0.jpg'));
       const form = new FormData();
       form.append('key', 'image');
       form.append(
@@ -549,7 +547,7 @@ describe('Operations on Objects', () => {
     });
 
     test('returns the location of the stored object in a header with subdomain URL', async function () {
-      const file = fs.readFileSync(require.resolve('../fixtures/image0.jpg'));
+      const file = fs.readFileSync(resolveFixturePath('image0.jpg'));
       const form = new FormData();
       form.append('key', 'image');
       form.append(
@@ -777,8 +775,8 @@ describe('Operations on Objects', () => {
 
     test('stores a different image and update the previous image', async function () {
       const files = [
-        require.resolve('../fixtures/image0.jpg'),
-        require.resolve('../fixtures/image1.jpg'),
+        resolveFixturePath('image0.jpg'),
+        resolveFixturePath('image1.jpg'),
       ];
 
       // Get object from store
@@ -897,7 +895,7 @@ describe('Operations on Objects', () => {
     });
 
     test('stores an image in a bucket', async function () {
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const data = await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -910,7 +908,7 @@ describe('Operations on Objects', () => {
     });
 
     test('stores a file in bucket with gzip encoding', async function () {
-      const file = require.resolve('../fixtures/jquery.js.gz');
+      const file = resolveFixturePath('jquery.js.gz');
 
       const params = {
         Bucket: 'bucket-a',
@@ -1202,7 +1200,7 @@ describe('Operations on Objects', () => {
       const srcKey = 'image';
       const destKey = 'image/jamie';
 
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const data = await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -1237,7 +1235,7 @@ describe('Operations on Objects', () => {
       const srcKey = 'image';
       const destKey = 'image/jamie';
 
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const data = await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -1270,7 +1268,7 @@ describe('Operations on Objects', () => {
       const srcKey = 'awesome 驚くばかり.jpg';
       const destKey = 'new 新しい.jpg';
 
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const data = await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -1297,7 +1295,7 @@ describe('Operations on Objects', () => {
       const srcKey = 'image';
       const destKey = 'image/jamie';
 
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -1328,7 +1326,7 @@ describe('Operations on Objects', () => {
       const srcKey = 'image';
       const destKey = 'image/jamie';
 
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const data = await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',
@@ -1359,7 +1357,7 @@ describe('Operations on Objects', () => {
     test('fails to update the metadata of an image object when no REPLACE MetadataDirective is specified', async function () {
       const key = 'image';
 
-      const file = require.resolve('../fixtures/image0.jpg');
+      const file = resolveFixturePath('image0.jpg');
       const data = await s3Client.send(
         new PutObjectCommand({
           Bucket: 'bucket-a',

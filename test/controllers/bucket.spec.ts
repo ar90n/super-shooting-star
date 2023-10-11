@@ -1,7 +1,6 @@
 'use strict';
 
 import { describe, test, beforeEach, afterEach } from '@jest/globals';
-import { createRequire } from 'node:module';
 import { expect } from 'chai';
 import {
   CreateBucketCommand,
@@ -20,9 +19,11 @@ import {
 } from '@aws-sdk/client-s3';
 import fs from 'fs';
 import { find } from 'lodash-es';
-import { createServerAndClient2, generateTestObjects } from '../helpers';
-
-const require = createRequire(import.meta.url);
+import {
+  createServerAndClient2,
+  generateTestObjects,
+  resolveFixturePath,
+} from '../helpers';
 
 describe('Operations on Buckets', () => {
   let s3Client;
@@ -35,15 +36,13 @@ describe('Operations on Buckets', () => {
     // AWS default CORS settings when enabling it in the UI
     {
       name: 'cors-test0',
-      configs: [fs.readFileSync(require.resolve('../fixtures/cors-test0.xml'))],
+      configs: [fs.readFileSync(resolveFixturePath('cors-test0.xml'))],
     },
 
     // A standard static hosting configuration with no custom error page
     {
       name: 'website-test0',
-      configs: [
-        fs.readFileSync(require.resolve('../fixtures/website-test0.xml')),
-      ],
+      configs: [fs.readFileSync(resolveFixturePath('website-test0.xml'))],
     },
   ];
 

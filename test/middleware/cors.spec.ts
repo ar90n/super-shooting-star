@@ -1,12 +1,9 @@
 'use strict';
 
 import { describe, test, beforeEach } from '@jest/globals';
-import { createRequire } from 'node:module';
 import {
-  S3Client,
   PutObjectCommand,
   GetObjectCommand,
-  HeadObjectCommand,
   DeleteBucketCorsCommand,
   GetBucketCorsCommand,
 } from '@aws-sdk/client-s3';
@@ -15,16 +12,14 @@ import { expect } from 'chai';
 import fs from 'fs';
 
 import S3rver from '../../lib/s3rver';
-import { createClient } from '../helpers';
-
-const require = createRequire(import.meta.url);
+import { createClient, resolveFixturePath } from '../helpers';
 
 describe('CORS Policy Tests', function () {
   const buckets = [
     // provides rules for origins http://a-test.example.com and http://*.bar.com
     {
       name: 'bucket0',
-      configs: [fs.readFileSync(require.resolve('../fixtures/cors-test0.xml'))],
+      configs: [fs.readFileSync(resolveFixturePath('cors-test0.xml'))],
     },
   ];
 
@@ -35,9 +30,7 @@ describe('CORS Policy Tests', function () {
         configureBuckets: [
           {
             name: 'bucket0',
-            configs: [
-              fs.readFileSync(require.resolve('../fixtures/cors-invalid0.xml')),
-            ],
+            configs: [fs.readFileSync(resolveFixturePath('cors-invalid0.xml'))],
           },
         ],
       });
@@ -55,9 +48,7 @@ describe('CORS Policy Tests', function () {
       configureBuckets: [
         {
           name: 'bucket1',
-          configs: [
-            fs.readFileSync(require.resolve('../fixtures/cors-invalid1.xml')),
-          ],
+          configs: [fs.readFileSync(resolveFixturePath('cors-invalid1.xml'))],
         },
       ],
     });
@@ -79,9 +70,7 @@ describe('CORS Policy Tests', function () {
       configureBuckets: [
         {
           name: 'bucket2',
-          configs: [
-            fs.readFileSync(require.resolve('../fixtures/cors-invalid2.xml')),
-          ],
+          configs: [fs.readFileSync(resolveFixturePath('cors-invalid2.xml'))],
         },
       ],
     });
@@ -138,9 +127,7 @@ describe('CORS Policy Tests', function () {
         new PutObjectCommand({
           Bucket: bucket.name,
           Key: 'image',
-          Body: await fs.promises.readFile(
-            require.resolve('../fixtures/image0.jpg'),
-          ),
+          Body: await fs.promises.readFile(resolveFixturePath('image0.jpg')),
           ContentType: 'image/jpeg',
         }),
       );
@@ -174,9 +161,7 @@ describe('CORS Policy Tests', function () {
         new PutObjectCommand({
           Bucket: buckets[0].name,
           Key: 'image',
-          Body: await fs.promises.readFile(
-            require.resolve('../fixtures/image0.jpg'),
-          ),
+          Body: await fs.promises.readFile(resolveFixturePath('image0.jpg')),
           ContentType: 'image/jpeg',
         }),
       );
@@ -210,9 +195,7 @@ describe('CORS Policy Tests', function () {
         new PutObjectCommand({
           Bucket: buckets[0].name,
           Key: 'image',
-          Body: await fs.promises.readFile(
-            require.resolve('../fixtures/image0.jpg'),
-          ),
+          Body: await fs.promises.readFile(resolveFixturePath('image0.jpg')),
           ContentType: 'image/jpeg',
         }),
       );
@@ -246,9 +229,7 @@ describe('CORS Policy Tests', function () {
         new PutObjectCommand({
           Bucket: buckets[0].name,
           Key: 'image',
-          Body: await fs.promises.readFile(
-            require.resolve('../fixtures/image0.jpg'),
-          ),
+          Body: await fs.promises.readFile(resolveFixturePath('image0.jpg')),
           ContentType: 'image/jpeg',
         }),
       );
@@ -282,9 +263,7 @@ describe('CORS Policy Tests', function () {
         new PutObjectCommand({
           Bucket: buckets[0].name,
           Key: 'image',
-          Body: await fs.promises.readFile(
-            require.resolve('../fixtures/image0.jpg'),
-          ),
+          Body: await fs.promises.readFile(resolveFixturePath('image0.jpg')),
           ContentType: 'image/jpeg',
         }),
       );

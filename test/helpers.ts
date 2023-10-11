@@ -1,5 +1,6 @@
 'use strict';
 
+import { resolve } from 'import-meta-resolve';
 import {
   S3Client,
   PutObjectCommand,
@@ -132,4 +133,11 @@ export const StreamingRequestSigner = class extends RequestSigner {
 export const getEndpointHref = async (s3Client: S3Client) => {
   const { hostname, port, protocol, path } = await s3Client.config.endpoint();
   return `${protocol}//${hostname}:${port}${path}`;
+};
+
+export const resolveFixturePath = (fixtureName: string): string => {
+  return resolve(`./fixtures/${fixtureName}`, import.meta.url).replace(
+    'file://',
+    '',
+  );
 };

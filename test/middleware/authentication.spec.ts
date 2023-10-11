@@ -1,22 +1,23 @@
 'use strict';
 
 import { describe, test, beforeEach } from '@jest/globals';
-import { createRequire } from 'node:module';
 import { expect } from 'chai';
 import express from 'express';
 import fs from 'fs';
 import { URL } from 'url';
 import { toISO8601String } from '../../lib/utils';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { createServerAndClient2, getEndpointHref } from '../helpers';
+import {
+  createServerAndClient2,
+  getEndpointHref,
+  resolveFixturePath,
+} from '../helpers';
 import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
-
-const require = createRequire(import.meta.url);
 
 describe('REST Authentication', () => {
   let s3rver;
@@ -246,9 +247,7 @@ describe('REST Authentication', () => {
       new PutObjectCommand({
         Bucket: 'bucket-a',
         Key: 'image',
-        Body: await fs.promises.readFile(
-          require.resolve('../fixtures/image0.jpg'),
-        ),
+        Body: await fs.promises.readFile(resolveFixturePath('image0.jpg')),
       }),
     );
     const url = await getSignedUrl(
@@ -270,9 +269,7 @@ describe('REST Authentication', () => {
       new PutObjectCommand({
         Bucket: 'bucket-a',
         Key: 'image',
-        Body: await fs.promises.readFile(
-          require.resolve('../fixtures/image0.jpg'),
-        ),
+        Body: await fs.promises.readFile(resolveFixturePath('image0.jpg')),
       }),
     );
     const endpointHref = await getEndpointHref(s3Client);

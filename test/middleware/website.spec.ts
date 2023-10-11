@@ -9,9 +9,11 @@ import {
 import { expect } from 'chai';
 import fs from 'fs';
 
-import { createServerAndClient2, getEndpointHref } from '../helpers';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
+import {
+  createServerAndClient2,
+  getEndpointHref,
+  resolveFixturePath,
+} from '../helpers';
 
 describe('Static Website Tests', function () {
   let s3Client: S3Client;
@@ -24,33 +26,25 @@ describe('Static Website Tests', function () {
     // A standard static hosting configuration with no custom error page
     {
       name: 'website0',
-      configs: [
-        fs.readFileSync(require.resolve('../fixtures/website-test0.xml')),
-      ],
+      configs: [fs.readFileSync(resolveFixturePath('website-test0.xml'))],
     },
 
     // A static website with a custom error page
     {
       name: 'website1',
-      configs: [
-        fs.readFileSync(require.resolve('../fixtures/website-test1.xml')),
-      ],
+      configs: [fs.readFileSync(resolveFixturePath('website-test1.xml'))],
     },
 
     // A static website with a single simple routing rule
     {
       name: 'website2',
-      configs: [
-        fs.readFileSync(require.resolve('../fixtures/website-test2.xml')),
-      ],
+      configs: [fs.readFileSync(resolveFixturePath('website-test2.xml'))],
     },
 
     // A static website with multiple routing rules
     {
       name: 'website3',
-      configs: [
-        fs.readFileSync(require.resolve('../fixtures/website-test3.xml')),
-      ],
+      configs: [fs.readFileSync(resolveFixturePath('website-test3.xml'))],
     },
   ];
 
