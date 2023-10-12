@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { ListBucketsCommand } from '@aws-sdk/client-s3';
 import { zip } from 'lodash-es';
 import moment from 'moment';
-import { createServerAndClient2 } from '../helpers';
+import { createServerAndClient } from '../helpers';
 
 describe('Operations on the Service', () => {
   describe('GET Service', () => {
@@ -19,7 +19,7 @@ describe('Operations on the Service', () => {
     ];
 
     test('returns a list of buckets', async function () {
-      const { s3Client } = await createServerAndClient2({
+      const { s3Client } = await createServerAndClient({
         configureBuckets: buckets,
       });
       const data = await s3Client.send(new ListBucketsCommand({}));

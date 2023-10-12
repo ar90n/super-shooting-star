@@ -81,9 +81,7 @@ export const createClient = (port: number) => {
   return s3Client;
 };
 
-export const createServerAndClient2 = async function createServerAndClient2(
-  options,
-) {
+export const createServerAndClient = async (options) => {
   const s3rver = new S3rver(options);
   const { port } = await s3rver.run();
   instances.add(s3rver);

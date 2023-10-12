@@ -20,7 +20,7 @@ import {
 import fs from 'fs';
 import { find } from 'lodash-es';
 import {
-  createServerAndClient2,
+  createServerAndClient,
   generateTestObjects,
   resolveFixturePath,
 } from '../helpers';
@@ -47,7 +47,7 @@ describe('Operations on Buckets', () => {
   ];
 
   beforeEach(async function () {
-    ({ s3Client } = await createServerAndClient2({
+    ({ s3Client } = await createServerAndClient({
       configureBuckets: buckets,
       allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
     }));

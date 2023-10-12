@@ -7,13 +7,13 @@ import { zip } from 'lodash-es';
 import moment from 'moment';
 import os from 'os';
 
-import { createServerAndClient2, parseXml, getEndpointHref } from '../helpers';
+import { createServerAndClient, parseXml, getEndpointHref } from '../helpers';
 
 describe('Virtual Host resolution', () => {
   const buckets = [{ name: 'bucket-a' }, { name: 'bucket-b' }];
 
   test('lists objects with subdomain-domain style bucket access', async function () {
-    const { s3Client } = await createServerAndClient2({
+    const { s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
@@ -25,7 +25,7 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists objects with a vhost-style bucket access', async function () {
-    const { s3Client } = await createServerAndClient2({
+    const { s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
@@ -37,7 +37,7 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists buckets when vhost-style bucket access is disabled', async function () {
-    const { s3Client } = await createServerAndClient2({
+    const { s3Client } = await createServerAndClient({
       vhostBuckets: false,
       configureBuckets: buckets,
     });
@@ -58,7 +58,7 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists buckets at a custom service endpoint', async function () {
-    const { s3Client } = await createServerAndClient2({
+    const { s3Client } = await createServerAndClient({
       serviceEndpoint: 'example.com',
       configureBuckets: buckets,
     });
@@ -79,7 +79,7 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists buckets at the OS hostname', async function () {
-    const { s3Client } = await createServerAndClient2({
+    const { s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     });
     const href = await getEndpointHref(s3Client);
@@ -99,7 +99,7 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists objects in a bucket at a custom service endpoint', async function () {
-    const { s3Client } = await createServerAndClient2({
+    const { s3Client } = await createServerAndClient({
       serviceEndpoint: 'example.com',
       configureBuckets: buckets,
     });

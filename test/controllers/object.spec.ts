@@ -36,7 +36,7 @@ import pMap from 'p-map';
 import { URL, URLSearchParams } from 'url';
 
 import {
-  createServerAndClient2,
+  createServerAndClient,
   getEndpointHref,
   generateTestObjects,
   md5,
@@ -68,7 +68,7 @@ describe('Operations on Objects', () => {
   };
 
   beforeEach(async () => {
-    ({ s3rver, s3Client } = await createServerAndClient2({
+    ({ s3rver, s3Client } = await createServerAndClient({
       configureBuckets: Object.values(buckets),
       allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
     }));

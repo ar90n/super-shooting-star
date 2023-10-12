@@ -17,7 +17,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 
 import {
-  createServerAndClient2,
+  createServerAndClient,
   generateTestObjects,
   getEndpointHref,
 } from './helpers';
@@ -184,7 +184,7 @@ describe('S3rver', () => {
     let s3Client;
 
     beforeEach(async () => {
-      ({ s3rver, s3Client } = await createServerAndClient2({
+      ({ s3rver, s3Client } = await createServerAndClient({
         configureBuckets: [{ name: 'bucket-a' }, { name: 'bucket-b' }],
       }));
     });

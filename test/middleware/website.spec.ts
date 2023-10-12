@@ -10,7 +10,7 @@ import { expect } from 'chai';
 import fs from 'fs';
 
 import {
-  createServerAndClient2,
+  createServerAndClient,
   getEndpointHref,
   resolveFixturePath,
 } from '../helpers';
@@ -49,7 +49,7 @@ describe('Static Website Tests', function () {
   ];
 
   beforeEach(async () => {
-    ({ s3Client } = await createServerAndClient2({
+    ({ s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     }));
   });
@@ -67,14 +67,9 @@ describe('Static Website Tests', function () {
       }),
     );
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}page/`, {
-        headers: { host: `bucket-a.s3-website-us-east-1.amazonaws.com` },
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}page/`, {
+      headers: { host: `bucket-a.s3-website-us-east-1.amazonaws.com` },
+    });
     expect(res.status).to.equal(404);
     expect(res.headers.get('content-type')).to.equal(
       'text/html; charset=utf-8',
@@ -102,15 +97,10 @@ describe('Static Website Tests', function () {
 
   test('allows redirects for image requests', async function () {
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}website3/complex/image.png`, {
-        headers: { accept: 'image/png' },
-        redirect: 'manual',
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}website3/complex/image.png`, {
+      headers: { accept: 'image/png' },
+      redirect: 'manual',
+    });
     expect(res.status).to.equal(307);
     expect(res.headers.get('location')).to.equal('https://custom/replacement');
   });
@@ -166,15 +156,10 @@ describe('Static Website Tests', function () {
       }),
     );
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}website0/page`, {
-        headers: { accept: 'text/html' },
-        redirect: 'manual',
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}website0/page`, {
+      headers: { accept: 'text/html' },
+      redirect: 'manual',
+    });
     expect(res.status).to.equal(302);
     expect(res.headers.get('location')).to.equal('/website0/page/');
   });
@@ -189,29 +174,19 @@ describe('Static Website Tests', function () {
       }),
     );
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}page`, {
-        headers: { host: 'website0.s3-website-us-east-1.amazonaws.com' },
-        redirect: 'manual',
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}page`, {
+      headers: { host: 'website0.s3-website-us-east-1.amazonaws.com' },
+      redirect: 'manual',
+    });
     expect(res.status).to.equal(302);
     expect(res.headers.get('location')).to.equal('/page/');
   });
 
   test('returns a HTML 404 error page', async function () {
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}website0/page/not-exists`, {
-        headers: { accept: 'text/html' },
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}website0/page/not-exists`, {
+      headers: { accept: 'text/html' },
+    });
     expect(res.status).to.equal(404);
     expect(res.headers.get('content-type')).to.equal(
       'text/html; charset=utf-8',
@@ -221,14 +196,9 @@ describe('Static Website Tests', function () {
 
   test('returns a HTML 404 error page for a missing index key', async function () {
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}website0/page/not-exists/`, {
-        headers: { accept: 'text/html' },
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}website0/page/not-exists/`, {
+      headers: { accept: 'text/html' },
+    });
     expect(res.status).to.equal(404);
     expect(res.headers.get('content-type')).to.equal(
       'text/html; charset=utf-8',
@@ -249,14 +219,9 @@ describe('Static Website Tests', function () {
       }),
     );
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}website1/page/not-exists`, {
-        headers: { accept: 'text/html' },
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}website1/page/not-exists`, {
+      headers: { accept: 'text/html' },
+    });
     expect(res.headers.get('content-type')).to.equal(
       'text/html; charset=utf-8',
     );
@@ -310,15 +275,10 @@ describe('Static Website Tests', function () {
       }),
     );
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}website0/`, {
-        headers: { accept: 'text/html' },
-        redirect: 'manual',
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}website0/`, {
+      headers: { accept: 'text/html' },
+      redirect: 'manual',
+    });
     expect(res.status).to.equal(301);
     expect(res.headers.get('location')).to.equal(redirectLocation);
   });
@@ -335,15 +295,10 @@ describe('Static Website Tests', function () {
       }),
     );
     const href = await getEndpointHref(s3Client);
-    let res;
-    try {
-      res = await fetch(`${href}website1/page/`, {
-        headers: { accept: 'text/html' },
-        redirect: 'manual',
-      });
-    } catch (err) {
-      res = err.response;
-    }
+    const res = await fetch(`${href}website1/page/`, {
+      headers: { accept: 'text/html' },
+      redirect: 'manual',
+    });
     expect(res.status).to.equal(301);
     expect(res.headers.get('location')).to.equal(redirectLocation);
   });
@@ -351,15 +306,10 @@ describe('Static Website Tests', function () {
   describe('Routing rules', () => {
     test('evaluates a single simple routing rule', async function () {
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await fetch(`${href}website2/test/key/`, {
-          headers: { accept: 'text/html' },
-          redirect: 'manual',
-        });
-      } catch (err) {
-        res = err.response;
-      }
+      const res = await fetch(`${href}website2/test/key/`, {
+        headers: { accept: 'text/html' },
+        redirect: 'manual',
+      });
       expect(res.status).to.equal(301);
       expect(res.headers.get('location')).to.equal(
         href + 'website2/replacement/key/',
@@ -392,30 +342,20 @@ describe('Static Website Tests', function () {
         }),
       );
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await fetch(`${href}website2/recursive/foo`, {
-          headers: { accept: 'text/html' },
-          redirect: 'manual',
-        });
-      } catch (err) {
-        res = err.response;
-      }
+      const res = await fetch(`${href}website2/recursive/foo`, {
+        headers: { accept: 'text/html' },
+        redirect: 'manual',
+      });
       expect(res.status).to.equal(302);
       expect(res.headers.get('location')).to.equal('/website2/recursive/foo/');
     });
 
     test('evaluates a multi-rule config', async function () {
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await fetch(`${href}website3/simple/key`, {
-          headers: { accept: 'text/html' },
-          redirect: 'manual',
-        });
-      } catch (err) {
-        res = err.response;
-      }
+      const res = await fetch(`${href}website3/simple/key`, {
+        headers: { accept: 'text/html' },
+        redirect: 'manual',
+      });
       expect(res.status).to.equal(301);
       expect(res.headers.get('location')).to.equal(
         href + 'website3/replacement/key',
@@ -424,15 +364,10 @@ describe('Static Website Tests', function () {
 
     test('evaluates a complex rule', async function () {
       const href = await getEndpointHref(s3Client);
-      let res;
-      try {
-        res = await fetch(`${href}website3/complex/key`, {
-          headers: { accept: 'text/html' },
-          redirect: 'manual',
-        });
-      } catch (err) {
-        res = err.response;
-      }
+      const res = await fetch(`${href}website3/complex/key`, {
+        headers: { accept: 'text/html' },
+        redirect: 'manual',
+      });
       expect(res.status).to.equal(307);
       expect(res.headers.get('location')).to.equal(
         'https://custom/replacement',
