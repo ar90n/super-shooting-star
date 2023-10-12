@@ -16,6 +16,7 @@ import S3Error from './models/error';
 import FilesystemStore from './stores/filesystem';
 import router from './routes';
 import { getXmlRootTag } from './utils';
+import { useKoaServer } from 'routing-controllers';
 
 class S3rver extends Koa {
   static defaultOptions: any = {
@@ -163,41 +164,27 @@ class S3rver extends Koa {
   /**
    * Starts the HTTP server.
    *
-   * @param {Function} [callback] Function called with (err, addressObj) as arguments.
-   * @returns {this|Promise} The S3rver instance. If no callback function is supplied, a Promise
-   *   is returned.
+   * @returns {Promise} The promice of address of service.
    */
-  run(callback?): any {
-    const runAsync = async () => {
-      await this.configureBuckets();
+  async run(): Promise<any> {
+    await this.configureBuckets();
 
-      const { address, port, ...listenOptions } = this.serverOptions;
-      this.httpServer = await this._listen(port, address, listenOptions);
-      return this.httpServer.address();
-    };
-
-    if (typeof callback === 'function') {
-      callbackify(runAsync)(callback);
-      return this;
-    } else {
-      return runAsync();
-    }
+    const { address, port, ...listenOptions } = this.serverOptions;
+    this.httpServer = await this._listen(port, address, listenOptions);
+    return this.httpServer.address();
   }
 
-  _listen(
+  async _listen(
     ...args
-  ):
-    | http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
-    | Promise<
-        http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
-      > {
+  ): Promise<
+    http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
+  > {
     const { key, cert, pfx } = this.serverOptions;
     const server =
       (key && cert) || pfx
         ? https.createServer(this.serverOptions)
         : http.createServer(); // Node < 8.12 does not support http.createServer([options])
 
-    const [callback] = args.slice(-1);
     server.on('request', this.callback()).on('close', () => {
       this.logger.exceptions.unhandle();
       this.logger.close();
@@ -205,14 +192,11 @@ class S3rver extends Koa {
         this.reset();
       }
     });
-    if (typeof callback === 'function') {
-      return server.listen(...args);
-    } else {
-      return new Promise((resolve, reject) =>
-        //server.listen(...args, (err) => (err ? reject(err) : resolve(server))),
-        server.listen(...args, () => resolve(server)),
-      );
-    }
+
+    return new Promise((resolve, reject) =>
+      //server.listen(...args, (err) => (err ? reject(err) : resolve(server))),
+      server.listen(...args, () => resolve(server)),
+    );
   }
 
   /**
