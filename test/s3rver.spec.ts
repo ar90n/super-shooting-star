@@ -1,5 +1,6 @@
 'use strict';
 
+import { describe, test, beforeEach, afterEach } from '@jest/globals';
 import { expect } from 'chai';
 import {
   S3Client,
@@ -311,7 +312,7 @@ describe('S3rver', () => {
     await once(httpServer, 'listening');
 
     try {
-      const { port } = httpServer.address();
+      const { port } = httpServer.address() as any;
       const s3Client = new S3Client({
         credentials: {
           accessKeyId: 'S3RVER',

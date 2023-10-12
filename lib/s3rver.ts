@@ -4,10 +4,10 @@ import { XMLBuilder } from 'fast-xml-parser';
 import Koa from 'koa';
 import { defaults, isPlainObject } from 'lodash-es';
 import he from 'he';
-import http from 'http';
-import https from 'https';
-import os from 'os';
-import path from 'path';
+import http from 'node:http';
+import https from 'node:https';
+import os from 'node:os';
+import path from 'node:path';
 import { callbackify, format, promisify } from 'util';
 import loggerMiddleware from './middleware/logger';
 import vhostMiddleware from './middleware/vhost';
@@ -18,6 +18,31 @@ import router from './routes';
 import { getXmlRootTag } from './utils';
 
 class S3rver extends Koa {
+  static defaultOptions: any = {
+    address: 'localhost',
+    port: 4568,
+    key: undefined,
+    cert: undefined,
+    silent: false,
+    serviceEndpoint: 'amazonaws.com',
+    directory: path.join(os.tmpdir(), 's3rver'),
+    resetOnClose: false,
+    allowMismatchedSignatures: false,
+    vhostBuckets: true,
+    configureBuckets: [],
+  };
+  serverOptions: any;
+  _configureBuckets: any;
+  silent: any;
+  resetOnClose: any;
+  allowMismatchedSignatures: any;
+  store: any;
+  logger: any;
+  httpServer: http.Server<
+    typeof http.IncomingMessage,
+    typeof http.ServerResponse
+  >;
+
   constructor(options) {
     super();
     this.context.onerror = onerror;
@@ -63,7 +88,7 @@ class S3rver extends Koa {
 
       // Express mount interop
       this.use((ctx, next) => {
-        ctx.mountPath = ctx.mountPath || ctx.req.baseUrl;
+        ctx.mountPath = ctx.mountPath || (ctx.req as any).baseUrl;
         return next();
       });
 
@@ -142,12 +167,12 @@ class S3rver extends Koa {
    * @returns {this|Promise} The S3rver instance. If no callback function is supplied, a Promise
    *   is returned.
    */
-  run(callback) {
+  run(callback?): any {
     const runAsync = async () => {
       await this.configureBuckets();
 
       const { address, port, ...listenOptions } = this.serverOptions;
-      this.httpServer = await this.listen(port, address, listenOptions);
+      this.httpServer = await this._listen(port, address, listenOptions);
       return this.httpServer.address();
     };
 
@@ -159,7 +184,13 @@ class S3rver extends Koa {
     }
   }
 
-  listen(...args) {
+  _listen(
+    ...args
+  ):
+    | http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
+    | Promise<
+        http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
+      > {
     const { key, cert, pfx } = this.serverOptions;
     const server =
       (key && cert) || pfx
@@ -178,7 +209,8 @@ class S3rver extends Koa {
       return server.listen(...args);
     } else {
       return new Promise((resolve, reject) =>
-        server.listen(...args, (err) => (err ? reject(err) : resolve(server))),
+        //server.listen(...args, (err) => (err ? reject(err) : resolve(server))),
+        server.listen(...args, () => resolve(server)),
       );
     }
   }
@@ -189,7 +221,7 @@ class S3rver extends Koa {
    * @param {Function} [callback]
    * @returns {this|Promise}
    */
-  close(callback) {
+  close(callback?) {
     if (!this.httpServer) {
       const err = new Error('Not running');
       if (typeof callback === 'function') {
@@ -208,21 +240,11 @@ class S3rver extends Koa {
       return promisify(this.httpServer.close.bind(this.httpServer))();
     }
   }
+
+  getMiddleware() {
+    return this.callback();
+  }
 }
-S3rver.defaultOptions = {
-  address: 'localhost',
-  port: 4568,
-  key: undefined,
-  cert: undefined,
-  silent: false,
-  serviceEndpoint: 'amazonaws.com',
-  directory: path.join(os.tmpdir(), 's3rver'),
-  resetOnClose: false,
-  allowMismatchedSignatures: false,
-  vhostBuckets: true,
-  configureBuckets: [],
-};
-S3rver.prototype.getMiddleware = S3rver.prototype.callback;
 
 export default S3rver;
 
