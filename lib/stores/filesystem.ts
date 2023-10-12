@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import {
   createReadStream,
   createWriteStream,
-  rmdirSync,
+  rmSync,
   readdirSync,
   promises as fs,
 } from 'fs';
@@ -149,7 +149,7 @@ class FilesystemStore {
   reset() {
     const list = readdirSync(this.rootDirectory);
     for (const file of list) {
-      rmdirSync(path.join(this.rootDirectory, file), { recursive: true });
+      rmSync(path.join(this.rootDirectory, file), { recursive: true });
     }
   }
 

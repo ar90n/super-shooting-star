@@ -186,7 +186,7 @@ describe('Operations on Objects', () => {
         new PutObjectCommand({
           Bucket: 'bucket-a',
           Key: 'somekey',
-          Body: '',
+          Body: Buffer.alloc(0),
         }),
       );
       const object = await s3Client.send(

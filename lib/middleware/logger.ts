@@ -9,17 +9,10 @@ const { createLogger, format, transports } = pkg;
  */
 export default function (app, silent) {
   const logger = createLogger({
-    transports: [
-      new transports.Console({
-        level: 'debug',
-        format: format.combine(
-          format.colorize(),
-          format.splat(),
-          format.simple(),
-        ),
-        silent,
-      }),
-    ],
+    level: 'debug',
+    format: format.combine(format.colorize(), format.splat(), format.simple()),
+    silent,
+    transports: [new transports.Console()],
     exitOnError: false,
   });
   app.logger = app.context.logger = logger;
