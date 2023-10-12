@@ -468,19 +468,11 @@ describe('Operations on Buckets', () => {
       );
     });
 
-    test.skip('truncates a listing to 500 objects', async function () {
+    test('truncates a listing to 500 objects', async function () {
       await generateTestObjects(s3Client, 'bucket-a', 1000);
-      let data;
-      try {
-        data = await s3Client.send(
-          new ListObjectsV2Command({ Bucket: 'bucket-a', MaxKeys: 500 }),
-        );
-      } catch (e) {
-        // mosty happen in node 18 with the error "EMFILE: too many open files"
-        if (e.Code === 'InternalError') {
-          this.skip();
-        }
-      }
+      const data = await s3Client.send(
+        new ListObjectsV2Command({ Bucket: 'bucket-a', MaxKeys: 500 }),
+      );
       expect(data.IsTruncated).to.be.true;
       expect(data.KeyCount).to.equal(500);
       expect(data.Contents).to.have.lengthOf(500);
@@ -496,57 +488,33 @@ describe('Operations on Buckets', () => {
       expect(data.Contents).not.exist;
     });
 
-    test.skip('lists at most 1000 objects', async function () {
+    test('lists at most 1000 objects', async function () {
       await generateTestObjects(s3Client, 'bucket-a', 1100);
-      let data;
-      try {
-        data = await s3Client.send(
-          new ListObjectsV2Command({ Bucket: 'bucket-a', MaxKeys: 1100 }),
-        );
-      } catch (e) {
-        // mosty happen in node 18 with the error "EMFILE: too many open files"
-        if (e.Code === 'InternalError') {
-          this.skip();
-        }
-      }
+      const data = await s3Client.send(
+        new ListObjectsV2Command({ Bucket: 'bucket-a', MaxKeys: 1100 }),
+      );
       expect(data.IsTruncated).to.be.true;
       expect(data.MaxKeys).to.equal(1100);
       expect(data.Contents).to.have.lengthOf(1000);
       expect(data.KeyCount).to.equal(1000);
     }, 30000);
 
-    test.skip('lists 100 objects and return a continuation token', async function () {
+    test('lists 100 objects and return a continuation token', async function () {
       await generateTestObjects(s3Client, 'bucket-a', 200);
-      let data;
-      try {
-        data = await s3Client.send(
-          new ListObjectsV2Command({ Bucket: 'bucket-a', MaxKeys: 100 }),
-        );
-      } catch (e) {
-        // mosty happen in node 18 with the error "EMFILE: too many open files"
-        if (e.Code === 'InternalError') {
-          this.skip();
-        }
-      }
+      const data = await s3Client.send(
+        new ListObjectsV2Command({ Bucket: 'bucket-a', MaxKeys: 100 }),
+      );
       expect(data.IsTruncated).to.be.true;
       expect(data.Contents).to.have.lengthOf(100);
       expect(data.KeyCount).to.equal(100);
       expect(data.NextContinuationToken).to.exist;
     }, 30000);
 
-    test.skip('lists additional objects using a continuation token', async function () {
+    test('lists additional objects using a continuation token', async function () {
       await generateTestObjects(s3Client, 'bucket-a', 500);
-      let data;
-      try {
-        data = await s3Client.send(
-          new ListObjectsV2Command({ Bucket: 'bucket-a', MaxKeys: 400 }),
-        );
-      } catch (e) {
-        // mosty happen in node 18 with the error "EMFILE: too many open files"
-        if (e.Code === 'InternalError') {
-          this.skip();
-        }
-      }
+      const data = await s3Client.send(
+        new ListObjectsV2Command({ Bucket: 'bucket-a', MaxKeys: 400 }),
+      );
       expect(data.IsTruncated).to.be.true;
       expect(data.Contents).to.have.lengthOf(400);
       expect(data.NextContinuationToken).to.exist;

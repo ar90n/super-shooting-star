@@ -16,7 +16,17 @@ import S3Error from './models/error';
 import FilesystemStore from './stores/filesystem';
 import router from './routes';
 import { getXmlRootTag } from './utils';
-import { useKoaServer } from 'routing-controllers';
+
+const buildXmlifyMiddleware = (builder: XMLBuilder) => {
+  return async (ctx, next) => {
+    await next();
+    if (isPlainObject(ctx.body)) {
+      ctx.type = 'application/xml';
+      ctx.body =
+        '<?xml version="1.0" encoding="UTF-8"?>\n' + builder.build(ctx.body);
+    }
+  };
+};
 
 class S3rver extends Koa {
   static defaultOptions: any = {
@@ -46,6 +56,7 @@ class S3rver extends Koa {
 
   constructor(options) {
     super();
+
     this.context.onerror = onerror;
     const {
       silent,
@@ -77,15 +88,7 @@ class S3rver extends Koa {
             .replace(/&quot;/g, '"');
         },
       });
-      this.use(async (ctx, next) => {
-        await next();
-        if (isPlainObject(ctx.body)) {
-          ctx.type = 'application/xml';
-          ctx.body =
-            '<?xml version="1.0" encoding="UTF-8"?>\n' +
-            builder.build(ctx.body);
-        }
-      });
+      this.use(buildXmlifyMiddleware(builder));
 
       // Express mount interop
       this.use((ctx, next) => {
@@ -182,10 +185,10 @@ class S3rver extends Koa {
     const { key, cert, pfx } = this.serverOptions;
     const server =
       (key && cert) || pfx
-        ? https.createServer(this.serverOptions)
-        : http.createServer(); // Node < 8.12 does not support http.createServer([options])
+        ? https.createServer(this.serverOptions, this.callback())
+        : http.createServer(this.callback()); // Node < 8.12 does not support http.createServer([options])
 
-    server.on('request', this.callback()).on('close', () => {
+    server.on('close', () => {
       this.logger.exceptions.unhandle();
       this.logger.close();
       if (this.resetOnClose) {
@@ -194,7 +197,6 @@ class S3rver extends Koa {
     });
 
     return new Promise((resolve, reject) =>
-      //server.listen(...args, (err) => (err ? reject(err) : resolve(server))),
       server.listen(...args, () => resolve(server)),
     );
   }
@@ -202,27 +204,16 @@ class S3rver extends Koa {
   /**
    * Proxies httpServer.close().
    *
-   * @param {Function} [callback]
    * @returns {this|Promise}
    */
-  close(callback?) {
+  close() {
     if (!this.httpServer) {
       const err = new Error('Not running');
-      if (typeof callback === 'function') {
-        callback(err);
-        return this;
-      } else {
-        return Promise.reject(err);
-      }
+      return Promise.reject(err);
     }
-    if (typeof callback === 'function') {
-      this.httpServer.closeAllConnections();
-      this.httpServer.close(callback);
-      return this;
-    } else {
-      this.httpServer.closeAllConnections();
-      return promisify(this.httpServer.close.bind(this.httpServer))();
-    }
+
+    this.httpServer.closeAllConnections();
+    return promisify(this.httpServer.close.bind(this.httpServer))();
   }
 
   getMiddleware() {
