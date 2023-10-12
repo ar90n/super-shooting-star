@@ -1,12 +1,9 @@
 'use strict';
 
 class S3Bucket {
-  name: string;
-  creationDate: any;
-
-  constructor(name, creationDate) {
-    this.name = name;
-    this.creationDate = creationDate;
-  }
+  constructor(
+    public readonly name: string,
+    public readonly creationDate: Date,
+  ) {}
 }
 export default S3Bucket;

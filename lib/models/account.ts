@@ -1,22 +1,20 @@
 class AWSAccount {
   static registry: Map<string, AWSAccount>;
 
-  id: string;
-  displayName: string;
+  readonly id: number;
   accessKeys: Map<string, string>;
 
-  constructor(accountId, displayName) {
+  constructor(accountId: number, public readonly displayName: string) {
     this.id = accountId;
-    this.displayName = displayName;
     this.accessKeys = new Map();
   }
 
-  createKeyPair(accessKeyId, secretAccessKey) {
+  createKeyPair(accessKeyId: string, secretAccessKey: string) {
     AWSAccount.registry.set(accessKeyId, this);
     this.accessKeys.set(accessKeyId, secretAccessKey);
   }
 
-  revokeAccessKey(accessKeyId) {
+  revokeAccessKey(accessKeyId: string) {
     AWSAccount.registry.delete(accessKeyId);
     this.accessKeys.delete(accessKeyId);
   }

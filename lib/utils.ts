@@ -7,8 +7,12 @@ import he from 'he';
 import path from 'path';
 import { PassThrough } from 'stream';
 import S3Error from './models/error';
+import { Context } from 'koa';
 
-export const walk = function* walk(dir, recurseFilter) {
+export const walk = function* walk(
+  dir: string,
+  recurseFilter?: (any) => boolean,
+): Generator<string, any, undefined> {
   for (const filename of fs.readdirSync(dir)) {
     const filePath = path.posix.join(dir, filename);
     const stats = fs.statSync(filePath);
@@ -20,7 +24,7 @@ export const walk = function* walk(dir, recurseFilter) {
   }
 };
 
-export const capitalizeHeader = function (header) {
+export const capitalizeHeader = function (header: string): string {
   const exceptions = {
     'content-md5': 'Content-MD5',
     dnt: 'DNT',
@@ -63,7 +67,7 @@ export const concatStreams = function (streams) {
  *
  * @param {string} string
  */
-export const encodeURIComponentRFC3986 = function (string) {
+export const encodeURIComponentRFC3986 = function (string: string): string {
   return encodeURIComponent(string).replace(
     /[!'()*]/g,
     (ch) => '%' + ch.charCodeAt(0).toString(16).toUpperCase(),
@@ -79,14 +83,14 @@ export const getXmlRootTag = function (xml) {
   return Object.keys(traversal).pop();
 };
 
-export const randomBase64String = function (length) {
+export const randomBase64String = function (length: number): string {
   return crypto
     .randomBytes(Math.ceil((length * 3) / 4))
     .toString('base64')
     .slice(0, length);
 };
 
-export const randomHexString = function (length) {
+export const randomHexString = function (length: number): string {
   return crypto
     .randomBytes(Math.ceil(length / 2))
     .toString('hex')
@@ -98,7 +102,7 @@ export const randomHexString = function (length) {
  *
  * @param dateString
  */
-export const parseISO8601String = function (dateString) {
+export const parseISO8601String = function (dateString: string): Date {
   if (typeof dateString !== 'string') {
     return new Date(NaN);
   }
@@ -119,7 +123,7 @@ export const parseISO8601String = function (dateString) {
  *
  * @param dateString
  */
-export const parseDate = function (dateString) {
+export const parseDate = function (dateString: string): Date {
   let date = new Date(dateString);
   if (isNaN(date as any)) {
     date = parseISO8601String(dateString);
@@ -132,7 +136,7 @@ export const parseDate = function (dateString) {
  *
  * @param date
  */
-export const toISO8601String = function (date) {
+export const toISO8601String = function (date: number | string): string {
   return new Date(date).toISOString().replace(/[-:]|\.\d+/g, '');
 };
 
@@ -141,7 +145,7 @@ export const toISO8601String = function (date) {
  *
  * @param {Koa.Context} ctx
  */
-export const xmlBodyParser = async function xmlBodyParser(ctx) {
+export const xmlBodyParser = async function xmlBodyParser(ctx: Context) {
   const { req } = ctx;
   const xmlString: any = await new Promise((resolve, reject) => {
     let payload = '';
@@ -167,7 +171,7 @@ export const xmlBodyParser = async function xmlBodyParser(ctx) {
  *
  * @param {Koa.Context} ctx
  */
-export const utf8BodyParser = async function (ctx) {
+export const utf8BodyParser = async function (ctx: Context) {
   const { req } = ctx;
   ctx.request.body = await new Promise((resolve, reject) => {
     let payload = '';
@@ -177,7 +181,7 @@ export const utf8BodyParser = async function (ctx) {
   });
 };
 
-export const ensureDir = async function (dirPath) {
+export const ensureDir = async function (dirPath: string) {
   const options = { recursive: true, mode: 0o0755 };
   if (process.platform === 'win32') {
     delete options.mode;

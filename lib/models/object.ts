@@ -25,16 +25,15 @@ class S3Object {
     'OUTPOSTS',
   ];
 
-  bucket: string;
-  key: string;
-  content: any;
   metadata: any;
   range: any;
 
-  constructor(bucket, key, content, metadata) {
-    this.bucket = bucket;
-    this.key = key;
-    this.content = content;
+  constructor(
+    public readonly bucket: string,
+    public readonly key: string,
+    public readonly content: any,
+    metadata,
+  ) {
     if ('x-amz-storage-class' in metadata) {
       if (!S3Object.STORAGE_CLASSES.includes(metadata['x-amz-storage-class'])) {
         throw new S3Error(
@@ -60,11 +59,11 @@ class S3Object {
     );
   }
 
-  get size() {
+  get size(): number {
     return Number(this.metadata['content-length']);
   }
 
-  get lastModifiedDate() {
+  get lastModifiedDate(): Date {
     return new Date(this.metadata['last-modified']);
   }
 }

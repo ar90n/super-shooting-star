@@ -64,6 +64,7 @@
     "@aws-sdk/s3-request-presigner": "^3.427.0",
     "@types/aws4": "^1.11.4",
     "@types/koa": "^2.13.9",
+    "@types/koa-bodyparser": "^4.3.10",
     "@types/lodash": "^4.14.199",
     "@types/moment": "^2.13.0",
     "aws4": "^1.12.0",
