@@ -1,7 +1,7 @@
 'use strict';
 
 import { XMLBuilder } from 'fast-xml-parser';
-import Koa from 'koa';
+import Koa, { EventEmitter } from 'koa';
 import { defaults, isPlainObject } from 'lodash-es';
 import he from 'he';
 import http from 'node:http';
@@ -16,6 +16,9 @@ import S3Error from './models/error';
 import FilesystemStore from './stores/filesystem';
 import router from './routes';
 import { getXmlRootTag } from './utils';
+import { merge } from 'lodash';
+import { AddressInfo } from 'net';
+import { ListBucketInventoryConfigurationsOutputFilterSensitiveLog } from '@aws-sdk/client-s3';
 
 const buildXmlifyMiddleware = (builder: XMLBuilder) => {
   return async (ctx, next) => {
@@ -28,22 +31,173 @@ const buildXmlifyMiddleware = (builder: XMLBuilder) => {
   };
 };
 
-class S3rver extends Koa {
-  static defaultOptions: any = {
-    address: 'localhost',
-    port: 4568,
-    key: undefined,
-    cert: undefined,
-    silent: false,
-    serviceEndpoint: 'amazonaws.com',
-    directory: path.join(os.tmpdir(), 's3rver'),
-    resetOnClose: false,
-    allowMismatchedSignatures: false,
-    vhostBuckets: true,
-    configureBuckets: [],
+type ServerOptions = {
+  key: any;
+  cert: any;
+  pfx?: any;
+  port: number;
+};
+
+type Options = {
+  address: string;
+  port: number;
+  silent: boolean;
+  serviceEndpoint: string;
+  resetOnClose: boolean;
+  allowMismatchedSignatures: boolean;
+  vhostBuckets: boolean;
+  configureBuckets: { name: string; configs?: any }[];
+  store?: FilesystemStore;
+  directory?: string;
+  emitter?: EventEmitter;
+} & ServerOptions;
+
+export const defaultOptions: Options = {
+  address: 'localhost',
+  port: 4568,
+  key: undefined,
+  cert: undefined,
+  silent: false,
+  serviceEndpoint: 'amazonaws.com',
+  resetOnClose: false,
+  allowMismatchedSignatures: false,
+  vhostBuckets: true,
+  configureBuckets: [],
+  //store: new FilesystemStore(path.join(os.tmpdir(), 's3rver')),
+  //directory:path.join(os.tmpdir(), 's3rver')
+};
+
+const _configureBuckets = async (
+  store: any,
+  buckets: { name: string; configs?: any }[],
+) => {
+  return Promise.all(
+    buckets.map(async (bucket) => {
+      const bucketExists = !!(await store.getBucket(bucket.name));
+      const replacedConfigs = [];
+      await store.putBucket(bucket.name);
+      for (const configXml of bucket.configs || []) {
+        const xml = configXml.toString();
+        let Model;
+        switch (getXmlRootTag(xml)) {
+          case 'CORSConfiguration':
+            Model = getConfigModel('cors');
+            break;
+          case 'WebsiteConfiguration':
+            Model = getConfigModel('website');
+            break;
+        }
+        if (!Model) {
+          throw new Error(
+            'error reading bucket config: unsupported configuration type',
+          );
+        }
+        const config = Model.validate(xml);
+        const existingConfig = await store.getSubresource(
+          bucket.name,
+          undefined,
+          config.type,
+        );
+        await store.putSubresource(bucket.name, undefined, config);
+        if (existingConfig) {
+          replacedConfigs.push(config.type);
+        }
+      }
+      // // warn if we're updating a bucket that already exists
+      // if (replacedConfigs.length) {
+      //   this.logger.warn(
+      //     'replaced %s config for bucket "%s"',
+      //     replacedConfigs.join(),
+      //     bucket.name,
+      //   );
+      // } else if (bucketExists) {
+      //   this.logger.warn('the bucket "%s" already exists', bucket.name);
+      // }
+    }),
+  );
+};
+
+export const createServer = (
+  options: Partial<Options>,
+): (() => Promise<{ address: AddressInfo; close: () => void }>) => {
+  const app = new Koa();
+  app.context.onerror = onerror;
+
+  const mergedOptions = defaults({}, options, defaultOptions) as Options;
+  let {
+    silent,
+    serviceEndpoint,
+    resetOnClose,
+    allowMismatchedSignatures,
+    vhostBuckets,
+    configureBuckets,
+    store,
+    emitter,
+    port,
+  } = mergedOptions;
+
+  // Log all requests
+  app.use(loggerMiddleware(app, silent));
+  if (store === undefined) {
+    const rs = Math.random().toString(32).substring(2);
+    store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
+  }
+  app.context.store = store;
+  app.context.emitter = emitter;
+
+  // encode object responses as XML
+  const builder = new XMLBuilder({
+    attributesGroupName: '@',
+    tagValueProcessor: (tagName, a) => {
+      return he
+        .escape(a.toString(), { useNamedReferences: true })
+        .replace(/&quot;/g, '"');
+    },
+  });
+  app.use(buildXmlifyMiddleware(builder));
+
+  // Express mount interop
+  app.use((ctx, next) => {
+    ctx.mountPath = ctx.mountPath || (ctx.req as any).baseUrl;
+    return next();
+  });
+
+  app.use(vhostMiddleware({ serviceEndpoint, vhostBuckets }));
+  app.use(router.routes());
+
+  app.context.allowMismatchedSignatures = allowMismatchedSignatures;
+
+  return async (): Promise<{
+    address: AddressInfo;
+    close: () => Promise<void>;
+  }> => {
+    await _configureBuckets(store, configureBuckets);
+
+    const server = http.createServer(app.callback());
+    server.on('close', () => {
+      //this.logger.exceptions.unhandle();
+      //this.logger.close();
+      if (resetOnClose) {
+        store.reset();
+      }
+    });
+
+    await new Promise((resolve, reject) =>
+      server.listen(port, () => resolve({})),
+    );
+    const address = server.address() as AddressInfo;
+
+    const close = async () => {
+      server.closeAllConnections();
+      return promisify(server.close.bind(server))();
+    };
+    return { address, close };
   };
-  serverOptions: any;
-  _configureBuckets: any;
+};
+
+class S3rver extends Koa {
+  serverOptions: ServerOptions;
+  _configureBuckets: { name: string; configs?: any }[];
   silent: any;
   resetOnClose: any;
   allowMismatchedSignatures: any;
@@ -54,11 +208,11 @@ class S3rver extends Koa {
     typeof http.ServerResponse
   >;
 
-  constructor(options) {
+  constructor(options: Partial<Options>) {
     super();
-
     this.context.onerror = onerror;
-    const {
+    const mergedOptions = defaults({}, options, defaultOptions) as Options;
+    let {
       silent,
       serviceEndpoint,
       directory,
@@ -66,13 +220,16 @@ class S3rver extends Koa {
       allowMismatchedSignatures,
       vhostBuckets,
       configureBuckets,
-      ...serverOptions
-    } = defaults({}, options, S3rver.defaultOptions);
-    this.serverOptions = serverOptions;
+    } = mergedOptions;
+    this.serverOptions = mergedOptions;
     this._configureBuckets = configureBuckets;
     this.silent = silent;
     this.resetOnClose = resetOnClose;
-    this.allowMismatchedSignatures = allowMismatchedSignatures;
+    this.allowMismatchedSignatures = this.context.allowMismatchedSignatures =
+      allowMismatchedSignatures;
+    if (directory === undefined) {
+      directory = path.join(os.tmpdir(), 's3rver');
+    }
     this.store = this.context.store = new FilesystemStore(directory);
 
     // Log all requests
@@ -172,13 +329,13 @@ class S3rver extends Koa {
   async run(): Promise<any> {
     await this.configureBuckets();
 
-    const { address, port, ...listenOptions } = this.serverOptions;
-    this.httpServer = await this._listen(port, address, listenOptions);
+    const { port } = this.serverOptions;
+    this.httpServer = await this._listen(port);
     return this.httpServer.address();
   }
 
   async _listen(
-    ...args
+    port: number,
   ): Promise<
     http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
   > {
@@ -197,7 +354,7 @@ class S3rver extends Koa {
     });
 
     return new Promise((resolve, reject) =>
-      server.listen(...args, () => resolve(server)),
+      server.listen(port, () => resolve(server)),
     );
   }
 

@@ -12,40 +12,42 @@ import {
   ListBucketsCommand,
 } from '@aws-sdk/client-s3';
 import { once } from 'events';
-import express from 'express';
 import fs from 'fs';
 import crypto from 'crypto';
 
-import {
-  createServerAndClient,
-  generateTestObjects,
-  getEndpointHref,
-} from './helpers';
-import S3rver from '../lib/s3rver';
+import { generateTestObjects, getEndpointHref } from './helpers';
+import { createServer } from '../lib/s3rver';
+import FilesystemStore from '../lib/stores/filesystem';
+import os from 'node:os';
+import path from 'node:path';
+import { EventEmitter } from 'node:events';
 
 describe('S3rver', () => {
   describe('#run', () => {
     test('supports running on port 0', async function () {
-      const server = new S3rver({
+      const run = createServer({
         port: 0,
       });
-      const { port } = await server.run();
-      await server.close();
-      expect(port).to.be.above(0);
+      const { address, close } = await run();
+      await close();
+
+      expect(address.port).to.be.above(0);
     });
 
     test('creates preconfigured buckets on startup', async function () {
       const buckets = [{ name: 'bucket1' }, { name: 'bucket2' }];
-      const server = new S3rver({
+
+      const run = createServer({
         configureBuckets: buckets,
       });
-      const { port } = await server.run();
+      const { address, close } = await run();
+
       const s3Client = new S3Client({
         credentials: {
           accessKeyId: 'S3RVER',
           secretAccessKey: 'S3RVER',
         },
-        endpoint: `http://localhost:${port}`,
+        endpoint: `http://localhost:${address.port}`,
         forcePathStyle: true,
         region: 'localhost',
       });
@@ -54,7 +56,7 @@ describe('S3rver', () => {
         expect(res.Buckets).to.have.lengthOf(2);
       } finally {
         s3Client.destroy();
-        await server.close();
+        await close();
       }
     });
 
@@ -66,18 +68,18 @@ describe('S3rver', () => {
           fs.readFileSync('./example/website.xml'),
         ],
       };
-      const server = new S3rver({
+      const run = createServer({
         configureBuckets: [bucket],
         allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
       });
-      const { port } = await server.run();
+      const { address, close } = await run();
 
       const s3Client = new S3Client({
         credentials: {
           accessKeyId: 'S3RVER',
           secretAccessKey: 'S3RVER',
         },
-        endpoint: `http://localhost:${port}`,
+        endpoint: `http://localhost:${address.port}`,
         forcePathStyle: true,
         region: 'localhost',
       });
@@ -89,7 +91,7 @@ describe('S3rver', () => {
         );
       } finally {
         s3Client.destroy();
-        await server.close();
+        await close();
       }
     });
   });
@@ -97,19 +99,21 @@ describe('S3rver', () => {
   describe('#close', () => {
     test('cleans up after close if the resetOnClose setting is true', async function () {
       const bucket = { name: 'foobars' };
+      const store = new FilesystemStore(path.join(os.tmpdir(), 'sss'));
 
-      const server = new S3rver({
+      const run = createServer({
         resetOnClose: true,
         configureBuckets: [bucket],
+        store,
       });
-      const { port } = await server.run();
+      const { address, close } = await run();
 
       const s3Client = new S3Client({
         credentials: {
           accessKeyId: 'S3RVER',
           secretAccessKey: 'S3RVER',
         },
-        endpoint: `http://localhost:${port}`,
+        endpoint: `http://localhost:${address.port}`,
         forcePathStyle: true,
         region: 'localhost',
       });
@@ -118,26 +122,29 @@ describe('S3rver', () => {
         await generateTestObjects(s3Client, bucket.name, 10);
       } finally {
         s3Client.destroy();
-        await server.close();
+        await close();
       }
-      await expect(server.store.listBuckets()).to.eventually.have.lengthOf(0);
+      await expect(store.listBuckets()).to.eventually.have.lengthOf(0);
     });
 
     test('does not clean up after close if the resetOnClose setting is false', async function () {
       const bucket = { name: 'foobars' };
+      const rs = Math.random().toString(32).substring(2);
+      const store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
 
-      const server = new S3rver({
+      const run = createServer({
         resetOnClose: false,
         configureBuckets: [bucket],
+        store,
       });
-      const { port } = await server.run();
+      const { address, close } = await run();
 
       const s3Client = new S3Client({
         credentials: {
           accessKeyId: 'S3RVER',
           secretAccessKey: 'S3RVER',
         },
-        endpoint: `http://localhost:${port}`,
+        endpoint: `http://localhost:${address.port}`,
         forcePathStyle: true,
         region: 'localhost',
       });
@@ -146,25 +153,28 @@ describe('S3rver', () => {
         await generateTestObjects(s3Client, bucket.name, 10);
       } finally {
         s3Client.destroy();
-        await server.close();
+        await close();
       }
-      await expect(server.store.listBuckets()).to.eventually.have.lengthOf(1);
+      await expect(store.listBuckets()).to.eventually.have.lengthOf(1);
     });
 
     test('does not clean up after close if the resetOnClose setting is not set', async function () {
       const bucket = { name: 'foobars' };
+      const rs = Math.random().toString(32).substring(2);
+      const store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
 
-      const server = new S3rver({
+      const run = createServer({
         configureBuckets: [bucket],
+        store,
       });
-      const { port } = await server.run();
+      const { address, close } = await run();
 
       const s3Client = new S3Client({
         credentials: {
           accessKeyId: 'S3RVER',
           secretAccessKey: 'S3RVER',
         },
-        endpoint: `http://localhost:${port}`,
+        endpoint: `http://localhost:${address.port}`,
         forcePathStyle: true,
         region: 'localhost',
       });
@@ -173,20 +183,36 @@ describe('S3rver', () => {
         await generateTestObjects(s3Client, bucket.name, 10);
       } finally {
         s3Client.destroy();
-        await server.close();
+        await close();
       }
-      await expect(server.store.listBuckets()).to.eventually.have.lengthOf(1);
+      await expect(store.listBuckets()).to.eventually.have.lengthOf(1);
     });
   });
 
   describe("event 'event'", () => {
+    let emitter;
+    let close;
     let s3rver;
     let s3Client;
 
     beforeEach(async () => {
-      ({ s3rver, s3Client } = await createServerAndClient({
+      emitter = new EventEmitter();
+      const run = createServer({
         configureBuckets: [{ name: 'bucket-a' }, { name: 'bucket-b' }],
-      }));
+        emitter,
+      });
+      let address;
+      ({ address, close } = await run());
+
+      s3Client = new S3Client({
+        credentials: {
+          accessKeyId: 'S3RVER',
+          secretAccessKey: 'S3RVER',
+        },
+        endpoint: `http://localhost:${address.port}`,
+        forcePathStyle: true,
+        region: 'localhost',
+      });
     });
 
     afterEach(async () => {
@@ -194,7 +220,7 @@ describe('S3rver', () => {
     });
 
     test('triggers an event with a valid message structure', async function () {
-      const eventPromise = once(s3rver, 'event');
+      const eventPromise = once(emitter, 'event');
       const body = 'Hello!';
       await s3Client.send(
         new PutObjectCommand({
@@ -207,10 +233,12 @@ describe('S3rver', () => {
       const iso8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
       expect(event.Records[0].eventTime).to.match(iso8601);
       expect(new Date(event.Records[0].eventTime)).to.not.satisfy(isNaN);
+      s3Client.destroy();
+      await close();
     });
 
     test('triggers a Post event', async function () {
-      const eventPromise = once(s3rver, 'event');
+      const eventPromise = once(emitter, 'event');
       const body = 'Hello!';
 
       const form = new FormData();
@@ -230,10 +258,12 @@ describe('S3rver', () => {
         size: body.length,
         eTag: crypto.createHash('md5').update(body).digest('hex'),
       });
+      s3Client.destroy();
+      await close();
     });
 
     test('triggers a Put event', async function () {
-      const eventPromise = once(s3rver, 'event');
+      const eventPromise = once(emitter, 'event');
       const body = 'Hello!';
       await s3Client.send(
         new PutObjectCommand({
@@ -250,6 +280,8 @@ describe('S3rver', () => {
         size: body.length,
         eTag: crypto.createHash('md5').update(body).digest('hex'),
       });
+      s3Client.destroy();
+      await close();
     });
 
     test('triggers a Copy event', async function () {
@@ -261,7 +293,7 @@ describe('S3rver', () => {
           Body: body,
         }),
       );
-      const eventPromise = once(s3rver, 'event');
+      const eventPromise = once(emitter, 'event');
       await s3Client.send(
         new CopyObjectCommand({
           Bucket: 'bucket-b',
@@ -276,6 +308,8 @@ describe('S3rver', () => {
         key: 'testCopy',
         size: body.length,
       });
+      s3Client.destroy();
+      await close();
     });
 
     test('triggers a Delete event', async function () {
@@ -287,7 +321,7 @@ describe('S3rver', () => {
           Body: body,
         }),
       );
-      const eventPromise = once(s3rver, 'event');
+      const eventPromise = once(emitter, 'event');
       await s3Client.send(
         new DeleteObjectCommand({ Bucket: 'bucket-a', Key: 'testDelete' }),
       );
@@ -297,43 +331,8 @@ describe('S3rver', () => {
       expect(event.Records[0].s3.object).to.contain({
         key: 'testDelete',
       });
+      s3Client.destroy();
+      await close();
     });
-  });
-
-  test.skip('can be mounted on a subpath in an Express app', async function () {
-    const s3rver = new S3rver({
-      configureBuckets: [{ name: 'bucket-a' }, { name: 'bucket-b' }],
-    });
-    await s3rver.configureBuckets();
-
-    const app = express();
-    app.use('/basepath', s3rver.getMiddleware());
-    const httpServer = app.listen(0);
-    await once(httpServer, 'listening');
-
-    try {
-      const { port } = httpServer.address() as any;
-      const s3Client = new S3Client({
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
-        endpoint: `http://localhost:${port}`,
-        forcePathStyle: true,
-        region: 'localhost',
-      });
-      const res = await s3Client.send(new ListBucketsCommand({}));
-      expect(res.Buckets).toHaveLength(2);
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: 'bucket-a',
-          Key: 'text',
-          Body: 'Hello!',
-        }),
-      );
-    } finally {
-      httpServer.close();
-      await once(httpServer, 'close');
-    }
   });
 });

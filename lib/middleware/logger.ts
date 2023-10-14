@@ -15,7 +15,8 @@ export default function (app, silent) {
     transports: [new transports.Console()],
     exitOnError: false,
   });
-  app.logger = app.context.logger = logger;
+  app.logger = logger;
+  app.context.logger = logger;
 
   return koaLogger((message, args) => {
     if (args.length === 6) {

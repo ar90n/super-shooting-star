@@ -13,13 +13,23 @@ import { capitalizeHeader, utf8BodyParser, xmlBodyParser } from '../utils';
 import { aws4SignatureBodyParser } from '../signature/v4';
 
 function triggerS3Event(ctx, eventData) {
-  ctx.app.emit(
-    'event',
-    new S3Event(eventData, {
-      reqHeaders: ctx.headers,
-      sourceIp: ctx.ip,
-    }),
-  );
+  if (ctx.emitter) {
+    ctx.emitter.emit(
+      'event',
+      new S3Event(eventData, {
+        reqHeaders: ctx.headers,
+        sourceIp: ctx.ip,
+      }),
+    );
+  } else {
+    ctx.app.emit(
+      'event',
+      new S3Event(eventData, {
+        reqHeaders: ctx.headers,
+        sourceIp: ctx.ip,
+      }),
+    );
+  }
 }
 
 /*

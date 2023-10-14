@@ -36,7 +36,7 @@ function decipherContinuationToken(token) {
 
 export const bucketExists = async function bucketExists(ctx, next?) {
   const bucketName = ctx.params.bucket;
-  const bucket = await ctx.app.store.getBucket(bucketName);
+  const bucket = await ctx.store.getBucket(bucketName);
   if (!bucket) {
     ctx.logger.error('No bucket found for "%s"', bucketName);
     throw new S3Error('NoSuchBucket', 'The specified bucket does not exist', {

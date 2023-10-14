@@ -184,7 +184,7 @@ export default () =>
     }
 
     if (!ctx.state.account) {
-      if (ctx.app.allowMismatchedSignatures) {
+      if (ctx.allowMismatchedSignatures) {
         ctx.state.account = account;
       } else {
         throw new S3Error(
