@@ -11,7 +11,7 @@ import crypto from 'crypto';
 import { XMLParser } from 'fast-xml-parser';
 import { times } from 'lodash-es';
 import pMap from 'p-map';
-import { DefaultBuilder } from '../lib/super-shooting-star';
+import { DefaultBuilder, Options } from '../lib/super-shooting-star';
 const { RequestSigner } = pkg;
 
 //export const resetTmpDir = function resetTmpDir() {
@@ -74,7 +74,7 @@ export const createClient = (port: number) => {
   return s3Client;
 };
 
-export const createServerAndClient = async (options) => {
+export const createServerAndClient = async (options: Partial<Options>) => {
   const run = DefaultBuilder.with(options).build();
   const { address, close } = await run();
 

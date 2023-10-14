@@ -66,7 +66,7 @@ describe('Operations on Objects', () => {
 
   beforeEach(async () => {
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: Object.values(buckets),
+      buckets: Object.values(buckets),
       allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
     }));
   });

@@ -49,7 +49,7 @@ describe('Operations on Buckets', () => {
 
   beforeEach(async function () {
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: buckets,
+      buckets,
       allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
     }));
   });

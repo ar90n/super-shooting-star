@@ -43,7 +43,7 @@ describe('CORS Policy Tests', function () {
   test('fails to initialize a configuration with multiple wildcard characters', async function () {
     let error;
     try {
-      const run = DefaultBuilder.configureBuckets([
+      const run = DefaultBuilder.buckets([
         {
           name: 'bucket0',
           configs: [fs.readFileSync(resolveFixturePath('cors-invalid0.xml'))],
@@ -58,7 +58,7 @@ describe('CORS Policy Tests', function () {
   });
 
   test('fails to initialize a configuration with an illegal AllowedMethod', async function () {
-    const run = DefaultBuilder.configureBuckets([
+    const run = DefaultBuilder.buckets([
       {
         name: 'bucket1',
         configs: [fs.readFileSync(resolveFixturePath('cors-invalid1.xml'))],
@@ -77,7 +77,7 @@ describe('CORS Policy Tests', function () {
   });
 
   test('fails to initialize a configuration with missing required fields', async function () {
-    const run = DefaultBuilder.configureBuckets([
+    const run = DefaultBuilder.buckets([
       {
         name: 'bucket2',
         configs: [fs.readFileSync(resolveFixturePath('cors-invalid2.xml'))],
@@ -95,7 +95,7 @@ describe('CORS Policy Tests', function () {
 
   test('deletes a CORS configuration in an configured bucket', async function () {
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [buckets[0]],
+      buckets: [buckets[0]],
       allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
     }));
 
@@ -122,7 +122,7 @@ describe('CORS Policy Tests', function () {
     };
 
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [bucket],
+      buckets: [bucket],
     }));
     await s3Client.send(
       new PutObjectCommand({
@@ -149,7 +149,7 @@ describe('CORS Policy Tests', function () {
   test('adds the Access-Control-Allow-Origin header for a matching origin', async function () {
     const origin = 'http://a-test.example.com';
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [buckets[0]],
+      buckets: [buckets[0]],
     }));
     await s3Client.send(
       new PutObjectCommand({
@@ -176,7 +176,7 @@ describe('CORS Policy Tests', function () {
   test('matches an origin to a CORSRule with a wildcard character', async function () {
     const origin = 'http://foo.bar.com';
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [buckets[0]],
+      buckets: [buckets[0]],
     }));
     await s3Client.send(
       new PutObjectCommand({
@@ -203,7 +203,7 @@ describe('CORS Policy Tests', function () {
   test('omits the Access-Control-Allow-Origin header for a non-matching origin', async function () {
     const origin = 'http://b-test.example.com';
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [buckets[0]],
+      buckets: [buckets[0]],
     }));
     await s3Client.send(
       new PutObjectCommand({
@@ -230,7 +230,7 @@ describe('CORS Policy Tests', function () {
   test('exposes appropriate headers for a range request', async function () {
     const origin = 'http://a-test.example.com';
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [buckets[0]],
+      buckets: [buckets[0]],
     }));
     await s3Client.send(
       new PutObjectCommand({
@@ -259,7 +259,7 @@ describe('CORS Policy Tests', function () {
   test('responds to OPTIONS requests with allowed headers', async function () {
     const origin = 'http://foo.bar.com';
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [buckets[0]],
+      buckets: [buckets[0]],
     }));
     const url = await getSignedUrl(
       s3Client,
@@ -286,7 +286,7 @@ describe('CORS Policy Tests', function () {
   test('responds to OPTIONS requests with a Forbidden response', async function () {
     const origin = 'http://a-test.example.com';
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [buckets[0]],
+      buckets: [buckets[0]],
     }));
     const url = await getSignedUrl(
       s3Client,
@@ -310,7 +310,7 @@ describe('CORS Policy Tests', function () {
     const origin = 'http://foo.bar.com';
     const bucket = { name: 'foobar' };
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [bucket],
+      buckets: [bucket],
     }));
     const url = await getSignedUrl(
       s3Client,
@@ -333,7 +333,7 @@ describe('CORS Policy Tests', function () {
     const origin = 'http://a-test.example.com';
     const bucket = { name: 'foobar' };
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: [buckets[0]],
+      buckets: [buckets[0]],
     }));
     const url = await getSignedUrl(
       s3Client,

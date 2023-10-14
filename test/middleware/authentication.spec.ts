@@ -29,7 +29,7 @@ describe('REST Authentication', () => {
 
   beforeEach(async function () {
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: buckets,
+      buckets,
     }));
   });
 

@@ -22,7 +22,7 @@ describe('Operations on the Service', () => {
 
     beforeEach(async () => {
       ({ close, s3Client } = await createServerAndClient({
-        configureBuckets: buckets,
+        buckets,
       }));
     });
 

@@ -34,7 +34,7 @@ describe('S3rver', () => {
     test('creates preconfigured buckets on startup', async function () {
       const buckets = [{ name: 'bucket1' }, { name: 'bucket2' }];
 
-      const run = DefaultBuilder.configureBuckets(buckets).build();
+      const run = DefaultBuilder.buckets(buckets).build();
       const { address, close } = await run();
 
       const s3Client = createClient(address.port);
@@ -55,7 +55,7 @@ describe('S3rver', () => {
           fs.readFileSync('./example/website.xml'),
         ],
       };
-      const run = DefaultBuilder.configureBuckets([bucket])
+      const run = DefaultBuilder.buckets([bucket])
         .allowMismatchedSignatures(true)
         .build();
       const { address, close } = await run();
@@ -79,8 +79,8 @@ describe('S3rver', () => {
       const bucket = { name: 'foobars' };
       const store = new FilesystemStore(path.join(os.tmpdir(), 'sss'));
 
-      const run = DefaultBuilder.resetOnClose(true)
-        .configureBuckets([bucket])
+      const run = DefaultBuilder.useResetOnClose(true)
+        .buckets([bucket])
         .store(store)
         .build();
       const { address, close } = await run();
@@ -100,8 +100,8 @@ describe('S3rver', () => {
       const rs = Math.random().toString(32).substring(2);
       const store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
 
-      const run = DefaultBuilder.resetOnClose(false)
-        .configureBuckets([bucket])
+      const run = DefaultBuilder.useResetOnClose(false)
+        .buckets([bucket])
         .store(store)
         .build();
       const { address, close } = await run();
@@ -122,9 +122,7 @@ describe('S3rver', () => {
       const rs = Math.random().toString(32).substring(2);
       const store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
 
-      const run = DefaultBuilder.configureBuckets([bucket])
-        .store(store)
-        .build();
+      const run = DefaultBuilder.buckets([bucket]).store(store).build();
       const { address, close } = await run();
 
       const s3Client = createClient(address.port);
@@ -146,7 +144,7 @@ describe('S3rver', () => {
 
     beforeEach(async () => {
       emitter = new EventEmitter();
-      const run = DefaultBuilder.configureBuckets([
+      const run = DefaultBuilder.buckets([
         { name: 'bucket-a' },
         { name: 'bucket-b' },
       ])

@@ -30,7 +30,7 @@ describe('Virtual Host resolution', () => {
 
   test('lists objects with subdomain-domain style bucket access', async function () {
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: buckets,
+      buckets: buckets,
     }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
@@ -42,7 +42,7 @@ describe('Virtual Host resolution', () => {
 
   test('lists objects with a vhost-style bucket access', async function () {
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: buckets,
+      buckets: buckets,
     }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
@@ -54,8 +54,8 @@ describe('Virtual Host resolution', () => {
 
   test('lists buckets when vhost-style bucket access is disabled', async function () {
     ({ close, s3Client } = await createServerAndClient({
-      vhostBuckets: false,
-      configureBuckets: buckets,
+      useVhostBuckets: false,
+      buckets: buckets,
     }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
@@ -76,7 +76,7 @@ describe('Virtual Host resolution', () => {
   test('lists buckets at a custom service endpoint', async function () {
     ({ close, s3Client } = await createServerAndClient({
       serviceEndpoint: 'example.com',
-      configureBuckets: buckets,
+      buckets: buckets,
     }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
@@ -96,7 +96,7 @@ describe('Virtual Host resolution', () => {
 
   test('lists buckets at the OS hostname', async function () {
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: buckets,
+      buckets: buckets,
     }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
@@ -117,7 +117,7 @@ describe('Virtual Host resolution', () => {
   test('lists objects in a bucket at a custom service endpoint', async function () {
     ({ close, s3Client } = await createServerAndClient({
       serviceEndpoint: 'example.com',
-      configureBuckets: buckets,
+      buckets,
     }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {

@@ -51,7 +51,7 @@ describe('Static Website Tests', function () {
 
   beforeEach(async () => {
     ({ close, s3Client } = await createServerAndClient({
-      configureBuckets: buckets,
+      buckets,
     }));
   });
 

@@ -5,7 +5,6 @@ import Koa, { EventEmitter } from 'koa';
 import { isPlainObject } from 'lodash-es';
 import he from 'he';
 import http from 'node:http';
-import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
 import { format, promisify } from 'util';
@@ -29,40 +28,28 @@ const buildXmlifyMiddleware = (builder: XMLBuilder) => {
   };
 };
 
-type ServerOptions = {
-  key: any;
-  cert: any;
-  pfx?: any;
-  port: number;
-};
-
-type Options = {
+export type Options = {
   address: string;
   port: number;
-  silent: boolean;
+  verbose: boolean;
   serviceEndpoint: string;
-  resetOnClose: boolean;
+  useResetOnClose: boolean;
   allowMismatchedSignatures: boolean;
-  vhostBuckets: boolean;
-  configureBuckets: { name: string; configs?: any }[];
+  useVhostBuckets: boolean;
+  buckets: { name: string; configs?: any }[];
   store?: FilesystemStore;
-  directory?: string;
   emitter?: EventEmitter;
-} & ServerOptions;
+};
 
 export const defaultOptions: Options = {
-  address: 'localhost',
+  address: '0.0.0.0',
   port: 0,
-  key: undefined,
-  cert: undefined,
-  silent: false,
+  verbose: false,
+  buckets: [],
   serviceEndpoint: 'amazonaws.com',
-  resetOnClose: false,
+  useResetOnClose: false,
   allowMismatchedSignatures: false,
-  vhostBuckets: true,
-  configureBuckets: [],
-  //store: new FilesystemStore(path.join(os.tmpdir(), 's3rver')),
-  //directory:path.join(os.tmpdir(), 's3rver')
+  useVhostBuckets: true,
 };
 
 const _configureBuckets = async (
@@ -122,19 +109,19 @@ const build = (
   app.context.onerror = onerror;
 
   let {
-    silent,
+    verbose,
     serviceEndpoint,
-    resetOnClose,
+    useResetOnClose: resetOnClose,
     allowMismatchedSignatures,
-    vhostBuckets,
-    configureBuckets,
+    useVhostBuckets: vhostBuckets,
+    buckets: configureBuckets,
     store,
     emitter,
     port,
   } = options;
 
   // Log all requests
-  app.use(loggerMiddleware(app, silent));
+  app.use(loggerMiddleware(app, verbose));
   if (store === undefined) {
     const rs = Math.random().toString(32).substring(2);
     store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
