@@ -74,13 +74,25 @@ export const encodeURIComponentRFC3986 = function (string: string): string {
   );
 };
 
-export const getXmlRootTag = function (xml) {
+const xmlRootTagValues = ['CORSConfiguration', 'WebsiteConfiguration'] as const;
+type XMLRootTag = (typeof xmlRootTagValues)[number];
+
+const isXmlRootTag = (s: string): s is XMLRootTag => {
+  return xmlRootTagValues.some((tag) => tag.toString() === s);
+};
+
+export const getXmlRootTag = function (xml): XMLRootTag {
   const xmlParser = new XMLParser();
   const traversal = xmlParser.parse(xml.toString());
 
   delete traversal['?xml'];
 
-  return Object.keys(traversal).pop();
+  const tag = Object.keys(traversal).pop();
+  if (!isXmlRootTag(tag)) {
+    throw Error('Invalid XML root tag');
+  }
+
+  return tag;
 };
 
 export const randomBase64String = function (length: number): string {

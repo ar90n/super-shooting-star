@@ -52,17 +52,21 @@ export const defaultOptions: Options = {
   useVhostBuckets: true,
 };
 
-const _configureBuckets = async (
+const configureBuckets = async (
   store: any,
   buckets: { name: string; configs?: any }[],
 ) => {
   return Promise.all(
     buckets.map(async (bucket) => {
       const bucketExists = !!(await store.getBucket(bucket.name));
-      const replacedConfigs = [];
+      if (bucketExists) {
+        //   this.logger.warn('the bucket "%s" already exists', bucket.name);
+      }
+
       await store.putBucket(bucket.name);
       for (const configXml of bucket.configs || []) {
         const xml = configXml.toString();
+
         let Model;
         switch (getXmlRootTag(xml)) {
           case 'CORSConfiguration':
@@ -78,6 +82,7 @@ const _configureBuckets = async (
           );
         }
         const config = Model.validate(xml);
+
         const existingConfig = await store.getSubresource(
           bucket.name,
           undefined,
@@ -85,19 +90,13 @@ const _configureBuckets = async (
         );
         await store.putSubresource(bucket.name, undefined, config);
         if (existingConfig) {
-          replacedConfigs.push(config.type);
+          //   this.logger.warn(
+          //     'replaced %s config for bucket "%s"',
+          //     replacedConfigs.join(),
+          //     bucket.name,
+          //   );
         }
       }
-      // // warn if we're updating a bucket that already exists
-      // if (replacedConfigs.length) {
-      //   this.logger.warn(
-      //     'replaced %s config for bucket "%s"',
-      //     replacedConfigs.join(),
-      //     bucket.name,
-      //   );
-      // } else if (bucketExists) {
-      //   this.logger.warn('the bucket "%s" already exists', bucket.name);
-      // }
     }),
   );
 };
@@ -111,10 +110,10 @@ const build = (
   let {
     verbose,
     serviceEndpoint,
-    useResetOnClose: resetOnClose,
+    useResetOnClose,
     allowMismatchedSignatures,
-    useVhostBuckets: vhostBuckets,
-    buckets: configureBuckets,
+    useVhostBuckets,
+    buckets,
     store,
     emitter,
     port,
@@ -128,6 +127,7 @@ const build = (
   }
   app.context.store = store;
   app.context.emitter = emitter;
+  app.context.allowMismatchedSignatures = allowMismatchedSignatures;
 
   // encode object responses as XML
   const builder = new XMLBuilder({
@@ -146,22 +146,20 @@ const build = (
     return next();
   });
 
-  app.use(vhostMiddleware({ serviceEndpoint, vhostBuckets }));
+  app.use(vhostMiddleware({ serviceEndpoint, vhostBuckets: useVhostBuckets }));
   app.use(router.routes());
-
-  app.context.allowMismatchedSignatures = allowMismatchedSignatures;
 
   return async (): Promise<{
     address: AddressInfo;
     close: () => Promise<void>;
   }> => {
-    await _configureBuckets(store, configureBuckets);
+    await configureBuckets(store, buckets);
 
     const server = http.createServer(app.callback());
     server.on('close', () => {
-      //this.logger.exceptions.unhandle();
-      //this.logger.close();
-      if (resetOnClose) {
+      app.context.logger.exceptions.unhandle();
+      app.context.logger.close();
+      if (useResetOnClose) {
         store.reset();
       }
     });
