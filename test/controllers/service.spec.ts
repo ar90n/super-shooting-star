@@ -1,6 +1,6 @@
 'use strict';
 
-import { describe, test } from '@jest/globals';
+import { describe, test, beforeEach, afterEach } from '@jest/globals';
 import { expect } from 'chai';
 import { ListBucketsCommand } from '@aws-sdk/client-s3';
 import { zip } from 'lodash-es';
@@ -9,6 +9,8 @@ import { createServerAndClient } from '../helpers';
 
 describe('Operations on the Service', () => {
   describe('GET Service', () => {
+    let close;
+    let s3Client;
     const buckets = [
       { name: 'bucket1' },
       { name: 'bucket2' },
@@ -18,10 +20,18 @@ describe('Operations on the Service', () => {
       { name: 'bucket6' },
     ];
 
-    test('returns a list of buckets', async function () {
-      const { s3Client } = await createServerAndClient({
+    beforeEach(async () => {
+      ({ close, s3Client } = await createServerAndClient({
         configureBuckets: buckets,
-      });
+      }));
+    });
+
+    afterEach(async () => {
+      s3Client.destroy();
+      await close();
+    });
+
+    test('returns a list of buckets', async function () {
       const data = await s3Client.send(new ListBucketsCommand({}));
       data.Buckets.sort((lhs, rhs) => (lhs.Name > rhs.Name ? 1 : -1));
       for (const [bucket, config] of zip(data.Buckets, buckets)) {

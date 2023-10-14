@@ -188,3 +188,65 @@ export const ensureDir = async function (dirPath: string) {
   }
   await fs.promises.mkdir(dirPath, options);
 };
+
+// derived from https://gist.github.com/uhyo/5e0a5605402500baf33304392f9ac521
+type Builder<Remains, Props, Result> = ({} extends Remains
+  ? {
+      build: () => Result;
+    }
+  : {}) & { [P in keyof Props]-?: SetFunction<Remains, P, Props, Result> } & {
+  with: <InitialProps extends Partial<Props>>(
+    initialProps: InitialProps,
+  ) => Builder<Omit<Props, keyof InitialProps>, Props, Result>;
+};
+type SetFunction<Remains, K extends keyof Props, Props, Result> = (
+  value: Exclude<Props[K], undefined>,
+) => Builder<Pick<Remains, Exclude<keyof Remains, K>>, Props, Result>;
+
+type BuildFunction<Props, Result> = (props: Props) => Result;
+
+const propsObject = Symbol();
+const builderFunciton = Symbol();
+class BuilderImpl<Props, Result> {
+  constructor(bf: BuildFunction<Props, Result>) {
+    return new Proxy(
+      {
+        [propsObject]: {},
+        [builderFunciton]: bf,
+      },
+      {
+        get(target: any, prop: any, receiver: any) {
+          if (prop == 'build') {
+            return () => target[builderFunciton](target[propsObject]);
+          }
+
+          if (prop == 'with') {
+            return (props: Partial<Props>) => {
+              let builder = receiver;
+              for (const [k, v] of Object.entries(props)) {
+                builder = builder[k](v);
+              }
+
+              return builder;
+            };
+          }
+
+          return (value: any) => {
+            target[propsObject][prop] = value;
+            return receiver;
+          };
+        },
+      },
+    );
+  }
+}
+
+export const builderFactory = <Props, Result>(
+  bf: BuildFunction<Props, Result>,
+): new () => Builder<Props, Props, Result> => {
+  return class {
+    constructor() {
+      return new BuilderImpl(bf);
+    }
+  } as any;
+};

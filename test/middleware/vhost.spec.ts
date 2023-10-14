@@ -1,7 +1,6 @@
 'use strict';
 
-import { describe, test, beforeEach } from '@jest/globals';
-import { createRequire } from 'node:module';
+import { describe, test, beforeEach, afterEach } from '@jest/globals';
 import { expect } from 'chai';
 import { zip } from 'lodash-es';
 import moment from 'moment';
@@ -10,12 +9,29 @@ import os from 'os';
 import { createServerAndClient, parseXml, getEndpointHref } from '../helpers';
 
 describe('Virtual Host resolution', () => {
+  let close;
+  let s3Client;
   const buckets = [{ name: 'bucket-a' }, { name: 'bucket-b' }];
 
+  beforeEach(async () => {
+    close = undefined;
+    s3Client = undefined;
+  });
+
+  afterEach(async () => {
+    if (s3Client !== undefined) {
+      s3Client.destroy();
+    }
+
+    if (close !== undefined) {
+      await close();
+    }
+  });
+
   test('lists objects with subdomain-domain style bucket access', async function () {
-    const { s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       configureBuckets: buckets,
-    });
+    }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
       headers: { host: 'bucket-a.s3.amazonaws.com' },
@@ -25,9 +41,9 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists objects with a vhost-style bucket access', async function () {
-    const { s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       configureBuckets: buckets,
-    });
+    }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
       headers: { host: 'bucket-a' },
@@ -37,10 +53,10 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists buckets when vhost-style bucket access is disabled', async function () {
-    const { s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       vhostBuckets: false,
       configureBuckets: buckets,
-    });
+    }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
       headers: { host: 'bucket-a' },
@@ -58,10 +74,10 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists buckets at a custom service endpoint', async function () {
-    const { s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       serviceEndpoint: 'example.com',
       configureBuckets: buckets,
-    });
+    }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
       headers: { host: 's3.example.com' },
@@ -79,9 +95,9 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists buckets at the OS hostname', async function () {
-    const { s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       configureBuckets: buckets,
-    });
+    }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
       headers: { host: os.hostname() },
@@ -99,10 +115,10 @@ describe('Virtual Host resolution', () => {
   });
 
   test('lists objects in a bucket at a custom service endpoint', async function () {
-    const { s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       serviceEndpoint: 'example.com',
       configureBuckets: buckets,
-    });
+    }));
     const href = await getEndpointHref(s3Client);
     const res = await fetch(href, {
       headers: { host: 'bucket-a.s3.example.com' },

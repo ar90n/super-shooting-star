@@ -9,32 +9,25 @@ import {
 import pkg from 'aws4';
 import crypto from 'crypto';
 import { XMLParser } from 'fast-xml-parser';
-import fs from 'fs';
 import { times } from 'lodash-es';
-import os from 'os';
-import path from 'path';
 import pMap from 'p-map';
-import S3rver from '../lib/s3rver';
+import { DefaultBuilder } from '../lib/super-shooting-star';
 const { RequestSigner } = pkg;
 
-const tmpDir = path.join(os.tmpdir(), 's3rver_test');
-
-export const instances: Set<S3rver> = new Set();
-
-export const resetTmpDir = function resetTmpDir() {
-  try {
-    fs.rmSync(tmpDir, { recursive: true });
-  } catch (err) {
-    /* directory didn't exist */
-  }
-  try {
-    fs.mkdirSync(tmpDir, { recursive: true });
-  } catch (err) {
-    if (err.code !== 'EEXIST') {
-      throw err;
-    }
-  }
-};
+//export const resetTmpDir = function resetTmpDir() {
+//  try {
+//    fs.rmSync(tmpDir, { recursive: true });
+//  } catch (err) {
+//    /* directory didn't exist */
+//  }
+//  try {
+//    fs.mkdirSync(tmpDir, { recursive: true });
+//  } catch (err) {
+//    if (err.code !== 'EEXIST') {
+//      throw err;
+//    }
+//  }
+//};
 
 export const generateTestObjects = function generateTestObjects(
   s3Client,
@@ -82,12 +75,11 @@ export const createClient = (port: number) => {
 };
 
 export const createServerAndClient = async (options) => {
-  const s3rver = new S3rver(options);
-  const { port } = await s3rver.run();
-  instances.add(s3rver);
+  const run = DefaultBuilder.with(options).build();
+  const { address, close } = await run();
 
-  const s3Client = createClient(port);
-  return { s3rver, s3Client };
+  const s3Client = createClient(address.port);
+  return { close, s3Client };
 };
 
 export const StreamingRequestSigner = class extends RequestSigner {

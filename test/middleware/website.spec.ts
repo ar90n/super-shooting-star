@@ -16,6 +16,7 @@ import {
 } from '../helpers';
 
 describe('Static Website Tests', function () {
+  let close;
   let s3Client: S3Client;
   const buckets = [
     // a bucket with no additional config
@@ -49,13 +50,14 @@ describe('Static Website Tests', function () {
   ];
 
   beforeEach(async () => {
-    ({ s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     }));
   });
 
   afterEach(async function () {
     s3Client.destroy();
+    await close();
   });
 
   test('fails to read an object at the website endpoint from a bucket with no website configuration', async function () {

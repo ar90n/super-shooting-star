@@ -3,7 +3,6 @@
 import { describe, test, beforeEach, afterEach } from '@jest/globals';
 import { expect } from 'chai';
 import {
-  S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
   CopyObjectCommand,
@@ -15,8 +14,8 @@ import { once } from 'events';
 import fs from 'fs';
 import crypto from 'crypto';
 
-import { generateTestObjects, getEndpointHref } from './helpers';
-import { createServer } from '../lib/s3rver';
+import { createClient, generateTestObjects, getEndpointHref } from './helpers';
+import { DefaultBuilder } from '../lib/super-shooting-star';
 import FilesystemStore from '../lib/stores/filesystem';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,9 +24,7 @@ import { EventEmitter } from 'node:events';
 describe('S3rver', () => {
   describe('#run', () => {
     test('supports running on port 0', async function () {
-      const run = createServer({
-        port: 0,
-      });
+      const run = DefaultBuilder.port(0).build();
       const { address, close } = await run();
       await close();
 
@@ -37,20 +34,10 @@ describe('S3rver', () => {
     test('creates preconfigured buckets on startup', async function () {
       const buckets = [{ name: 'bucket1' }, { name: 'bucket2' }];
 
-      const run = createServer({
-        configureBuckets: buckets,
-      });
+      const run = DefaultBuilder.configureBuckets(buckets).build();
       const { address, close } = await run();
 
-      const s3Client = new S3Client({
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
-        endpoint: `http://localhost:${address.port}`,
-        forcePathStyle: true,
-        region: 'localhost',
-      });
+      const s3Client = createClient(address.port);
       try {
         const res = await s3Client.send(new ListBucketsCommand({}));
         expect(res.Buckets).to.have.lengthOf(2);
@@ -68,21 +55,12 @@ describe('S3rver', () => {
           fs.readFileSync('./example/website.xml'),
         ],
       };
-      const run = createServer({
-        configureBuckets: [bucket],
-        allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
-      });
+      const run = DefaultBuilder.configureBuckets([bucket])
+        .allowMismatchedSignatures(true)
+        .build();
       const { address, close } = await run();
 
-      const s3Client = new S3Client({
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
-        endpoint: `http://localhost:${address.port}`,
-        forcePathStyle: true,
-        region: 'localhost',
-      });
+      const s3Client = createClient(address.port);
 
       try {
         await s3Client.send(new GetBucketCorsCommand({ Bucket: bucket.name }));
@@ -101,23 +79,13 @@ describe('S3rver', () => {
       const bucket = { name: 'foobars' };
       const store = new FilesystemStore(path.join(os.tmpdir(), 'sss'));
 
-      const run = createServer({
-        resetOnClose: true,
-        configureBuckets: [bucket],
-        store,
-      });
+      const run = DefaultBuilder.resetOnClose(true)
+        .configureBuckets([bucket])
+        .store(store)
+        .build();
       const { address, close } = await run();
 
-      const s3Client = new S3Client({
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
-        endpoint: `http://localhost:${address.port}`,
-        forcePathStyle: true,
-        region: 'localhost',
-      });
-
+      const s3Client = createClient(address.port);
       try {
         await generateTestObjects(s3Client, bucket.name, 10);
       } finally {
@@ -132,22 +100,13 @@ describe('S3rver', () => {
       const rs = Math.random().toString(32).substring(2);
       const store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
 
-      const run = createServer({
-        resetOnClose: false,
-        configureBuckets: [bucket],
-        store,
-      });
+      const run = DefaultBuilder.resetOnClose(false)
+        .configureBuckets([bucket])
+        .store(store)
+        .build();
       const { address, close } = await run();
 
-      const s3Client = new S3Client({
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
-        endpoint: `http://localhost:${address.port}`,
-        forcePathStyle: true,
-        region: 'localhost',
-      });
+      const s3Client = createClient(address.port);
 
       try {
         await generateTestObjects(s3Client, bucket.name, 10);
@@ -163,21 +122,12 @@ describe('S3rver', () => {
       const rs = Math.random().toString(32).substring(2);
       const store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
 
-      const run = createServer({
-        configureBuckets: [bucket],
-        store,
-      });
+      const run = DefaultBuilder.configureBuckets([bucket])
+        .store(store)
+        .build();
       const { address, close } = await run();
 
-      const s3Client = new S3Client({
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
-        endpoint: `http://localhost:${address.port}`,
-        forcePathStyle: true,
-        region: 'localhost',
-      });
+      const s3Client = createClient(address.port);
 
       try {
         await generateTestObjects(s3Client, bucket.name, 10);
@@ -192,31 +142,25 @@ describe('S3rver', () => {
   describe("event 'event'", () => {
     let emitter;
     let close;
-    let s3rver;
     let s3Client;
 
     beforeEach(async () => {
       emitter = new EventEmitter();
-      const run = createServer({
-        configureBuckets: [{ name: 'bucket-a' }, { name: 'bucket-b' }],
-        emitter,
-      });
+      const run = DefaultBuilder.configureBuckets([
+        { name: 'bucket-a' },
+        { name: 'bucket-b' },
+      ])
+        .emitter(emitter)
+        .build();
       let address;
       ({ address, close } = await run());
 
-      s3Client = new S3Client({
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
-        endpoint: `http://localhost:${address.port}`,
-        forcePathStyle: true,
-        region: 'localhost',
-      });
+      s3Client = createClient(address.port);
     });
 
     afterEach(async () => {
       s3Client.destroy();
+      await close();
     });
 
     test('triggers an event with a valid message structure', async function () {
@@ -233,8 +177,6 @@ describe('S3rver', () => {
       const iso8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
       expect(event.Records[0].eventTime).to.match(iso8601);
       expect(new Date(event.Records[0].eventTime)).to.not.satisfy(isNaN);
-      s3Client.destroy();
-      await close();
     });
 
     test('triggers a Post event', async function () {
@@ -258,8 +200,6 @@ describe('S3rver', () => {
         size: body.length,
         eTag: crypto.createHash('md5').update(body).digest('hex'),
       });
-      s3Client.destroy();
-      await close();
     });
 
     test('triggers a Put event', async function () {
@@ -280,8 +220,6 @@ describe('S3rver', () => {
         size: body.length,
         eTag: crypto.createHash('md5').update(body).digest('hex'),
       });
-      s3Client.destroy();
-      await close();
     });
 
     test('triggers a Copy event', async function () {
@@ -308,8 +246,6 @@ describe('S3rver', () => {
         key: 'testCopy',
         size: body.length,
       });
-      s3Client.destroy();
-      await close();
     });
 
     test('triggers a Delete event', async function () {
@@ -331,8 +267,6 @@ describe('S3rver', () => {
       expect(event.Records[0].s3.object).to.contain({
         key: 'testDelete',
       });
-      s3Client.destroy();
-      await close();
     });
   });
 });

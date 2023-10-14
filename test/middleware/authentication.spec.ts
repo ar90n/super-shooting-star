@@ -1,8 +1,7 @@
 'use strict';
 
-import { describe, test, beforeEach } from '@jest/globals';
+import { describe, test, beforeEach, afterEach } from '@jest/globals';
 import { expect } from 'chai';
-import express from 'express';
 import fs from 'fs';
 import { URL } from 'url';
 import { toISO8601String } from '../../lib/utils';
@@ -20,7 +19,7 @@ import {
 } from '@aws-sdk/client-s3';
 
 describe('REST Authentication', () => {
-  let s3rver;
+  let close;
   let s3Client;
   const buckets = [
     {
@@ -29,9 +28,14 @@ describe('REST Authentication', () => {
   ];
 
   beforeEach(async function () {
-    ({ s3rver, s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       configureBuckets: buckets,
     }));
+  });
+
+  afterEach(async () => {
+    s3Client.destroy();
+    await close();
   });
 
   test('can GET a signed URL with subdomain bucket', async function () {
@@ -265,85 +269,6 @@ describe('REST Authentication', () => {
       }),
     );
     expect(object.Metadata).to.have.property('somekey', 'value');
-  });
-
-  test('can use signed URLs while mounted on a subpath', async function () {
-    const app = express();
-    app.use('/basepath', s3rver.getMiddleware());
-
-    const { httpServer } = s3rver;
-    httpServer.removeAllListeners('request');
-    httpServer.on('request', app);
-
-    const { port, protocol, path } = await s3Client.config.endpoint();
-
-    const s3ClientReq = new S3Client({
-      credentials: {
-        accessKeyId: 'S3RVER',
-        secretAccessKey: 'S3RVER',
-      },
-      endpoint: `${protocol}//localhost:${port}/basepath`,
-      forcePathStyle: true,
-      region: 'localhost',
-    });
-    await s3ClientReq.send(
-      new PutObjectCommand({ Bucket: 'bucket-a', Key: 'text', Body: 'Hello!' }),
-    );
-
-    const url = await getSignedUrl(
-      s3ClientReq,
-      new GetObjectCommand({
-        Bucket: 'bucket-a',
-        Key: 'text',
-      }),
-    );
-
-    const res = await fetch(url);
-    expect(res.text()).to.eventually.equal('Hello!');
-  });
-
-  test.skip('can use signed vhost URLs while mounted on a subpath', async function () {
-    await s3Client.send(
-      new PutObjectCommand({ Bucket: 'bucket-a', Key: 'text', Body: 'Hello!' }),
-    );
-
-    const app = express();
-    app.use('/basepath', s3rver.getMiddleware());
-
-    const { httpServer } = s3rver;
-    httpServer.removeAllListeners('request');
-    httpServer.on('request', app);
-
-    const { port, protocol } = await s3Client.config.endpoint();
-    const endpointHref = await getEndpointHref(s3Client);
-
-    const s3ClientReq = new S3Client({
-      credentials: {
-        accessKeyId: 'S3RVER',
-        secretAccessKey: 'S3RVER',
-      },
-      endpoint: `${protocol}//bucket-a:${port}/`,
-      forcePathStyle: false,
-      region: 'localhost',
-    });
-
-    const url = await getSignedUrl(
-      s3ClientReq,
-      new GetObjectCommand({
-        Bucket: 'bucket-a',
-        Key: 'text',
-      }),
-    );
-    console.log(url);
-
-    const { host, pathname, searchParams } = new URL(url);
-    const res = await fetch(new URL(`${pathname}`, endpointHref), {
-      headers: {
-        qs: `${searchParams}`,
-        host,
-      },
-    });
-    expect(res.text()).to.eventually.equal('Hello!');
   });
 
   test('rejects a request with an incorrect signature in header [v4]', async function () {

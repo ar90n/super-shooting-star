@@ -26,6 +26,7 @@ import {
 } from '../helpers';
 
 describe('Operations on Buckets', () => {
+  let close;
   let s3Client;
   const buckets = [
     // plain, unconfigured bucket
@@ -47,7 +48,7 @@ describe('Operations on Buckets', () => {
   ];
 
   beforeEach(async function () {
-    ({ s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       configureBuckets: buckets,
       allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
     }));
@@ -55,6 +56,7 @@ describe('Operations on Buckets', () => {
 
   afterEach(async function () {
     s3Client.destroy();
+    await close();
   });
 
   describe('DELETE Bucket', () => {

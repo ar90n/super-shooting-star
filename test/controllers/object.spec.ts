@@ -5,7 +5,6 @@ import { expect } from 'chai';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Upload } from '@aws-sdk/lib-storage';
 import {
-  S3Client,
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
@@ -25,9 +24,7 @@ import {
   AbortMultipartUploadCommandOutput,
   CompleteMultipartUploadCommandOutput,
 } from '@aws-sdk/client-s3';
-import { EventEmitter } from 'events';
 import { once } from 'events';
-import express from 'express';
 import fs from 'fs';
 import http from 'http';
 import { find, times } from 'lodash-es';
@@ -55,7 +52,7 @@ function streamToString(stream): Promise<string> {
 }
 
 describe('Operations on Objects', () => {
-  let s3rver;
+  let close;
   let s3Client;
   const buckets = {
     // plain, unconfigured buckets
@@ -68,7 +65,7 @@ describe('Operations on Objects', () => {
   };
 
   beforeEach(async () => {
-    ({ s3rver, s3Client } = await createServerAndClient({
+    ({ close, s3Client } = await createServerAndClient({
       configureBuckets: Object.values(buckets),
       allowMismatchedSignatures: true, // TODO: Remove this line by fixing signature mismatch
     }));
@@ -76,6 +73,7 @@ describe('Operations on Objects', () => {
 
   afterEach(async function () {
     s3Client.destroy();
+    await close();
   });
 
   describe('Delete Multiple Objects', () => {
@@ -924,40 +922,6 @@ describe('Operations on Objects', () => {
       );
       expect(object.ContentEncoding).to.equal('gzip');
       expect(object.ContentType).to.equal('application/javascript');
-    });
-
-    test('stores and retrieves an object while mounted on a subpath', async function () {
-      const { port, protocol } = await s3Client.config.endpoint();
-
-      const app = express();
-      app.use('/basepath', s3rver.getMiddleware());
-
-      const { httpServer } = s3rver;
-      httpServer.removeAllListeners('request');
-      httpServer.on('request', app);
-
-      const s3ClientReq = new S3Client({
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-        },
-        endpoint: `${protocol}//localhost:${port}/basepath`,
-        forcePathStyle: true,
-        region: 'localhost',
-      });
-
-      await s3ClientReq.send(
-        new PutObjectCommand({
-          Bucket: 'bucket-a',
-          Key: 'text',
-          Body: 'Hello!',
-        }),
-      );
-      const object = await s3ClientReq.send(
-        new GetObjectCommand({ Bucket: 'bucket-a', Key: 'text' }),
-      );
-      const body = await streamToString(object.Body);
-      expect(body).to.equal('Hello!');
     });
 
     test('stores an object in a bucket after all objects are deleted', async function () {
