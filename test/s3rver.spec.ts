@@ -77,7 +77,8 @@ describe('S3rver', () => {
   describe('#close', () => {
     test('cleans up after close if the resetOnClose setting is true', async function () {
       const bucket = { name: 'foobars' };
-      const store = new FilesystemStore(path.join(os.tmpdir(), 'sss'));
+      const rs = Math.random().toString(32).substring(2);
+      const store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
 
       const run = DefaultBuilder.useResetOnClose(true)
         .buckets([bucket])
