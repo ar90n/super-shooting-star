@@ -1,5 +1,6 @@
 'use strict';
 
+import { ParameterizedContext } from 'koa';
 import { escapeRegExp } from 'lodash-es';
 import { isIP } from 'net';
 import { hostname } from 'os';
@@ -7,8 +8,9 @@ import { hostname } from 'os';
 /**
  * Middleware that rewrites URLs for buckets specified via subdomain or host header
  */
+type Context = ParameterizedContext<{ service: string; vhost: boolean }, {}>;
 export default ({ serviceEndpoint, vhostBuckets }) =>
-  function vhost(ctx, next) {
+  function vhost<T extends Context>(ctx: T, next) {
     // prettier-ignore
     const pattern = RegExp(`^(?:(.+)\\.)?s3(-website)?([-.].+)?\\.${escapeRegExp(serviceEndpoint)}$`);
     const [match, bucket, website] = pattern.exec(ctx.hostname) || [];

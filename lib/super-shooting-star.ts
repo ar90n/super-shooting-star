@@ -1,32 +1,26 @@
 'use strict';
 
-import { XMLBuilder } from 'fast-xml-parser';
-import Koa, { EventEmitter } from 'koa';
-import { isPlainObject } from 'lodash-es';
-import he from 'he';
+import Koa, { DefaultState } from 'koa';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { format, promisify } from 'util';
 import loggerMiddleware from './middleware/logger';
 import vhostMiddleware from './middleware/vhost';
+import xmlifyMiddleware from './middleware/xmlify';
 import { getConfigModel } from './models/config';
 import S3Error from './models/error';
 import FilesystemStore from './stores/filesystem';
 import router from './routes';
 import { getXmlRootTag, builderFactory } from './utils';
 import { AddressInfo } from 'net';
-
-const buildXmlifyMiddleware = (builder: XMLBuilder) => {
-  return async (ctx, next) => {
-    await next();
-    if (isPlainObject(ctx.body)) {
-      ctx.type = 'application/xml';
-      ctx.body =
-        '<?xml version="1.0" encoding="UTF-8"?>\n' + builder.build(ctx.body);
-    }
-  };
-};
+import { EventEmitter } from 'node:events';
+import {
+  createLogger,
+  format as loggerFormat,
+  Logger,
+  transports,
+} from 'winston';
 
 export type Options = {
   address: string;
@@ -55,12 +49,13 @@ export const defaultOptions: Options = {
 const configureBuckets = async (
   store: any,
   buckets: { name: string; configs?: any }[],
+  logger: Logger,
 ) => {
   return Promise.all(
     buckets.map(async (bucket) => {
       const bucketExists = !!(await store.getBucket(bucket.name));
       if (bucketExists) {
-        //   this.logger.warn('the bucket "%s" already exists', bucket.name);
+        logger.warn('the bucket "%s" already exists', bucket.name);
       }
 
       await store.putBucket(bucket.name);
@@ -90,11 +85,11 @@ const configureBuckets = async (
         );
         await store.putSubresource(bucket.name, undefined, config);
         if (existingConfig) {
-          //   this.logger.warn(
-          //     'replaced %s config for bucket "%s"',
-          //     replacedConfigs.join(),
-          //     bucket.name,
-          //   );
+          logger.warn(
+            'replaced %s config for bucket "%s"',
+            config.type,
+            bucket.name,
+          );
         }
       }
     }),
@@ -104,9 +99,6 @@ const configureBuckets = async (
 const build = (
   options: Options,
 ): (() => Promise<{ address: AddressInfo; close: () => void }>) => {
-  const app = new Koa();
-  app.context.onerror = onerror;
-
   let {
     verbose,
     serviceEndpoint,
@@ -119,46 +111,58 @@ const build = (
     port,
   } = options;
 
-  // Log all requests
-  app.use(loggerMiddleware(app, verbose));
   if (store === undefined) {
     const rs = Math.random().toString(32).substring(2);
     store = new FilesystemStore(path.join(os.tmpdir(), 'sss', rs));
   }
-  app.context.store = store;
-  app.context.emitter = emitter;
-  app.context.allowMismatchedSignatures = allowMismatchedSignatures;
 
-  // encode object responses as XML
-  const builder = new XMLBuilder({
-    attributesGroupName: '@',
-    tagValueProcessor: (tagName, a) => {
-      return he
-        .escape(a.toString(), { useNamedReferences: true })
-        .replace(/&quot;/g, '"');
-    },
-  });
-  app.use(buildXmlifyMiddleware(builder));
-
-  // Express mount interop
-  app.use((ctx, next) => {
-    ctx.mountPath = ctx.mountPath || (ctx.req as any).baseUrl;
-    return next();
+  const logger = createLogger({
+    level: 'debug',
+    format: loggerFormat.combine(
+      loggerFormat.colorize(),
+      loggerFormat.splat(),
+      loggerFormat.simple(),
+    ),
+    silent: !verbose,
+    transports: [new transports.Console()],
+    exitOnError: false,
   });
 
-  app.use(vhostMiddleware({ serviceEndpoint, vhostBuckets: useVhostBuckets }));
-  app.use(router.routes());
+  // Log all requests
+  const app = new Koa<DefaultState, { logger: Logger }>()
+    .use<
+      {},
+      {
+        store: FilesystemStore;
+        mountPath: string;
+        emitter?: EventEmitter;
+        allowMismatchedSignatures: boolean;
+      }
+    >(async (ctx, next) => {
+      ctx.store = store;
+      ctx.mountPath = ctx.mountPath || (ctx.req as any).baseUrl;
+      ctx.emitter = emitter;
+      ctx.allowMismatchedSignatures = allowMismatchedSignatures;
+      return next();
+    })
+    .use(xmlifyMiddleware())
+    .use(vhostMiddleware({ serviceEndpoint, vhostBuckets: useVhostBuckets }))
+    .use(loggerMiddleware(logger))
+    .use(router.routes());
+
+  app.context.logger = logger;
+  app.context.onerror = onerror;
 
   return async (): Promise<{
     address: AddressInfo;
     close: () => Promise<void>;
   }> => {
-    await configureBuckets(store, buckets);
+    await configureBuckets(store, buckets, logger);
 
     const server = http.createServer(app.callback());
     server.on('close', () => {
-      app.context.logger.exceptions.unhandle();
-      app.context.logger.close();
+      logger.exceptions.unhandle();
+      logger.close();
       if (useResetOnClose) {
         store.reset();
       }

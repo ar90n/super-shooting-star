@@ -2,22 +2,12 @@
 
 import Koa from 'koa';
 import koaLogger from 'koa-logger';
-import pkg from 'winston';
-const { createLogger, format, transports } = pkg;
+import { Logger } from 'winston';
 
 /**
  * Creates and assigns a Winston logger instance to an app and returns
  */
-export default function (app: Koa, verbose: boolean) {
-  const logger = createLogger({
-    level: 'debug',
-    format: format.combine(format.colorize(), format.splat(), format.simple()),
-    silent: !verbose,
-    transports: [new transports.Console()],
-    exitOnError: false,
-  });
-  app.context.logger = logger;
-
+export default function (logger: Logger) {
   return koaLogger((message, args) => {
     if (args.length === 6) {
       // only log responses
