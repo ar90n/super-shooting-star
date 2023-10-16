@@ -13,7 +13,7 @@ class S3Error extends Error {
   expose: any;
   description: any;
 
-  static fromError(err) {
+  static fromError(err): S3Error {
     return Object.assign(
       new S3Error(
         'InternalError',

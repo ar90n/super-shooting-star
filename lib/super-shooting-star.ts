@@ -12,7 +12,7 @@ import { loadConfigModel } from './models/config';
 import S3Error from './models/error';
 import FilesystemStore from './stores/filesystem';
 import router from './routes';
-import { getXmlRootTag, builderFactory } from './utils';
+import { builderFactory } from './utils';
 import { AddressInfo } from 'net';
 import { EventEmitter } from 'node:events';
 import {
@@ -45,6 +45,62 @@ export const defaultOptions: Options = {
   allowMismatchedSignatures: false,
   useVhostBuckets: true,
 };
+
+/**
+ * Koa context.onerror handler modified to write a XML-formatted response body
+ * @param {Error} err
+ */
+function onerror(err: Error) {
+  // don't do anything if there is no error.
+  // this allows you to pass `this.onerror`
+  // to node-style callbacks.
+  if (err == null) return;
+
+  if (!(err instanceof Error))
+    err = new Error(format('non-error thrown: %j', err));
+
+  let headerSent = false;
+  if (this.headerSent || !this.writable) {
+    headerSent = (err as any).headerSent = true;
+  }
+
+  // delegate
+  this.app.emit('error', err, this);
+
+  // nothing we can do here other
+  // than delegate to the app-level
+  // handler and log.
+  if (headerSent) {
+    return;
+  }
+
+  const { res } = this;
+
+  let s3Error: S3Error;
+  if (!(err instanceof S3Error)) {
+    s3Error = S3Error.fromError(err);
+  } else {
+    s3Error = err;
+  }
+
+  // first unset all headers
+  res
+    .getHeaderNames()
+    .filter((name) => !name.match(/^access-control-|vary|x-amz-/i))
+    .forEach((name) => res.removeHeader(name));
+
+  // (the presence of x-amz-error-* headers needs additional research)
+  // this.set(err.headers);
+
+  // force application/xml
+  this.type = 'application/xml';
+
+  // respond
+  const msg = s3Error.toXML();
+  this.status = s3Error.status;
+  this.length = Buffer.byteLength(msg);
+  res.end(msg);
+}
 
 const configureBuckets = async (
   store: any,
@@ -169,56 +225,3 @@ export const Builder = builderFactory<
   () => Promise<{ address: AddressInfo; close: () => void }>
 >(build);
 export const DefaultBuilder = new Builder().with(defaultOptions);
-
-/**
- * Koa context.onerror handler modified to write a XML-formatted response body
- * @param {Error} err
- */
-function onerror(err) {
-  // don't do anything if there is no error.
-  // this allows you to pass `this.onerror`
-  // to node-style callbacks.
-  if (err == null) return;
-
-  if (!(err instanceof Error))
-    err = new Error(format('non-error thrown: %j', err));
-
-  let headerSent = false;
-  if (this.headerSent || !this.writable) {
-    headerSent = err.headerSent = true;
-  }
-
-  // delegate
-  this.app.emit('error', err, this);
-
-  // nothing we can do here other
-  // than delegate to the app-level
-  // handler and log.
-  if (headerSent) {
-    return;
-  }
-
-  const { res } = this;
-
-  if (!(err instanceof S3Error)) {
-    err = S3Error.fromError(err);
-  }
-
-  // first unset all headers
-  res
-    .getHeaderNames()
-    .filter((name) => !name.match(/^access-control-|vary|x-amz-/i))
-    .forEach((name) => res.removeHeader(name));
-
-  // (the presence of x-amz-error-* headers needs additional research)
-  // this.set(err.headers);
-
-  // force application/xml
-  this.type = 'application/xml';
-
-  // respond
-  const msg = err.toXML();
-  this.status = err.status;
-  this.length = Buffer.byteLength(msg);
-  res.end(msg);
-}
