@@ -28,16 +28,17 @@
   "homepage": "https://github.com/ar90n/super-shooting-star",
   "scripts": {
     "coverage": "nyc npm test",
+    "build": "tsc --build ./tsconfig.build.json",
     "test": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --openssl-legacy-provider\" npx jest --runInBand ./test/",
     "fmt": "eslint . --fix && prettier . --write",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "prepublishOnly": "npm run build"
   },
-  "main": "lib/s3rver.js",
+  "main": "dist/super-shooting-star.js",
   "files": [
-    "lib/",
-    "example/*.xml"
+    "dist/"
   ],
-  "bin": "bin/s3rver.js",
+  "bin": "bin/super-shooting-star.js",
   "directories": {
     "lib": "./lib",
     "example": "./example",

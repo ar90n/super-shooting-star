@@ -248,7 +248,7 @@ describe('Static Website Tests', function () {
   });
 
   test('stores an object with website-redirect-location metadata', async function () {
-    const redirectLocation = 'https://github.com/jamhall/s3rver';
+    const redirectLocation = 'https://github.com/ar90n/super-shooting-star';
     await s3Client.send(
       new PutObjectCommand({
         Bucket: 'website0',
@@ -267,7 +267,7 @@ describe('Static Website Tests', function () {
   });
 
   test('redirects for an object stored with a website-redirect-location', async function () {
-    const redirectLocation = 'https://github.com/jamhall/s3rver';
+    const redirectLocation = 'https://github.com/ar90n/super-shooting-star';
     await s3Client.send(
       new PutObjectCommand({
         Bucket: 'website0',
@@ -286,7 +286,7 @@ describe('Static Website Tests', function () {
   });
 
   test('redirects for a custom error page stored with a website-redirect-location', async function () {
-    const redirectLocation = 'https://github.com/jamhall/s3rver';
+    const redirectLocation = 'https://github.com/ar90n/super-shooting-star';
     const body = '<html><body>Hello</body></html>';
     await s3Client.send(
       new PutObjectCommand({

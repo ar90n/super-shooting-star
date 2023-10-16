@@ -1,8 +1,9 @@
-#!/usr/bin/env node'use strict';
+#!/usr/bin/env node
+'use strict';
 import fs from 'fs';
 import { Command } from 'commander';
 import pkg from '../package.json';
-import S3rver from './s3rver';
+import { DefaultBuilder, defaultOptions } from '../dist/super-shooting-star';
 
 function ensureDirectory(directory) {
   fs.mkdirSync(directory, { recursive: true });
@@ -38,14 +39,14 @@ program
   .option(
     '-a, --address <value>',
     'Hostname or IP to bind to',
-    S3rver.defaultOptions.address,
+    defaultOptions.address,
   )
   .option(
     '-p, --port <n>',
     'Port of the http server',
-    S3rver.defaultOptions.port,
+    defaultOptions.port.toString(),
   )
-  .option('-s, --silent', 'Suppress log messages', S3rver.defaultOptions.silent)
+  .option('-s, --silent', 'Suppress log messages', defaultOptions.silent)
   .option(
     '--key <path>',
     'Path to private key file for running with TLS',
@@ -59,7 +60,7 @@ program
   .option(
     '--service-endpoint <address>',
     'Overrides the AWS service root for subdomain-style access',
-    S3rver.defaultOptions.serviceEndpoint,
+    defaultOptions.serviceEndpoint,
   )
   .option(
     '--allow-mismatched-signatures',
@@ -82,17 +83,20 @@ program.options.find((option) =>
 program.on('--help', () => {
   console.log('');
   console.log('Examples:');
-  console.log('  $ s3rver -d /tmp/s3rver -a 0.0.0.0 -p 0');
   console.log(
-    '  $ s3rver -d /tmp/s3rver --configure-bucket test-bucket ./cors.xml ./website.xml',
+    '  $ super-shooting-star -d /tmp/super-shooting-star -a 0.0.0.0 -p 0',
+  );
+  console.log(
+    '  $ super-shooting-star -d /tmp/super-shooting-star --configure-bucket test-bucket ./cors.xml ./website.xml',
   );
 });
 
 program.action(async ({ configureBucket, ...opts }) => {
   opts.configureBuckets = configureBucket;
-  const { address, port } = await new S3rver(opts).run();
+  const run = DefaultBuilder.with(opts).build();
+  const { address } = await run();
   console.log();
-  console.log('S3rver listening on %s:%d', address, port);
+  console.log('S3rver listening on %s:%d', address.address, address.port);
 });
 
 program.parseAsync(process.argv).catch((err) => {
