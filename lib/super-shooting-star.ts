@@ -8,7 +8,7 @@ import { format, promisify } from 'util';
 import loggerMiddleware from './middleware/logger';
 import vhostMiddleware from './middleware/vhost';
 import xmlifyMiddleware from './middleware/xmlify';
-import { getConfigModel } from './models/config';
+import { loadConfigModel } from './models/config';
 import S3Error from './models/error';
 import FilesystemStore from './stores/filesystem';
 import router from './routes';
@@ -60,24 +60,7 @@ const configureBuckets = async (
 
       await store.putBucket(bucket.name);
       for (const configXml of bucket.configs || []) {
-        const xml = configXml.toString();
-
-        let Model;
-        switch (getXmlRootTag(xml)) {
-          case 'CORSConfiguration':
-            Model = getConfigModel('cors');
-            break;
-          case 'WebsiteConfiguration':
-            Model = getConfigModel('website');
-            break;
-        }
-        if (!Model) {
-          throw new Error(
-            'error reading bucket config: unsupported configuration type',
-          );
-        }
-        const config = Model.validate(xml);
-
+        const config = loadConfigModel(configXml.toString());
         const existingConfig = await store.getSubresource(
           bucket.name,
           undefined,

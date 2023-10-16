@@ -4,8 +4,27 @@ import { XMLParser, XMLBuilder, XMLValidator } from 'fast-xml-parser';
 import { escapeRegExp } from 'lodash-es';
 import S3Error from './error';
 import RoutingRule from './routing-rule';
+import { getXmlRootTag } from '../utils';
 
 const xmlParser = new XMLParser();
+
+export const loadConfigModel = (xml: string): S3ConfigBase => {
+  let Model;
+  switch (getXmlRootTag(xml)) {
+    case 'CORSConfiguration':
+      Model = getConfigModel('cors');
+      break;
+    case 'WebsiteConfiguration':
+      Model = getConfigModel('website');
+      break;
+  }
+  if (!Model) {
+    throw new Error(
+      'error reading bucket config: unsupported configuration type',
+    );
+  }
+  return Model.validate(xml);
+};
 
 export const getConfigModel = function getConfigModel(type) {
   switch (type) {
