@@ -21,7 +21,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 
-describe('S3rver', () => {
+describe('SuperShootingStar', () => {
   describe('#run', () => {
     test('supports running on port 0', async function () {
       const run = DefaultBuilder.port(0).build();
